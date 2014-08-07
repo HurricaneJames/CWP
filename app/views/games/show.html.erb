@@ -1,0 +1,14 @@
+<p id="notice"><%= notice %></p>
+
+<p>
+  <strong>Current state:</strong>
+  <%= @game.current_state %>
+</p>
+
+<p>
+  <strong>Moves:</strong>
+  <%= @game.moves %>
+</p>
+
+<%= link_to 'Edit', edit_game_path(@game) %> |
+<%= link_to 'Back', games_path %>
