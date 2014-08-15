@@ -5,4 +5,10 @@ class Game < ActiveRecord::Base
     # is move in range of places piece is allowed to move
     # 
   end
+
+  # return the piece on the given tile
+  # or :none, :off_board
+  def piece_on_tile(tile)
+    raise "NOT YET IMPLEMENTED"
+  end
 end
