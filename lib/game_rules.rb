@@ -74,8 +74,6 @@ class GameRules
   end
 
   def add_defaults!(rule_element)
-    add_default_steps_to rule_element
-    # add_default_collision_rules_to rule_element
     add_default_result_probability_to rule_element
   end
 
@@ -96,16 +94,6 @@ class GameRules
   def expand_result_keywords_in(rule_element)
     rule_element[:result] = result_probabilities[rule_element[:result]] if is_direction_element?(rule_element) && rule_element[:result].present?
   end
-
-  # expand default steps ({ min: 1, max: 0 })
-  def add_default_steps_to(rule_element)
-    rule_element[:steps] = { min: 1, max: 0 } if is_direction_element?(rule_element) && rule_element[:steps].blank?
-  end
-
-  # expand defaul collisions (blocking)
-  # def add_default_collision_rules_to(rule_element)
-  #   rule_element[:collisions] = :blocking if is_direction_element?(rule_element) && rule_element[:collisions].blank?
-  # end
 
   # expand default result ( [90%] )
   def add_default_result_probability_to(rule_element)
