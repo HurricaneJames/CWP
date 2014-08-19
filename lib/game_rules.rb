@@ -68,22 +68,13 @@ class GameRules
 
   def expand_move_syntax_from!(rule_set)
     rule_set.each do |rule_element|
-      add_defaults_to! rule_element
       expand_keywords_in! rule_element
     end
-  end
-
-  def add_defaults!(rule_element)
-    add_default_result_probability_to rule_element
   end
 
   def expand_keywords_in!(rule_element)
     expand_result_keywords_in rule_element
     expand_move_syntax_from! rule_element if rule_element.is_a?(Enumerable)
-  end
-
-  def steps_from_fixed_value(value)
-    return { min: value, max: value } if value.is_a?(Numeric)
   end
 
   def is_direction_element?(rule_element)

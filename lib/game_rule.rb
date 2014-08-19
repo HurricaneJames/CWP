@@ -153,6 +153,16 @@ class GameRule
     def diagonal_backward_left (from); backward(from); left(from); end
     def diagonal_backward_right(from); backward(from); right(from); end
 
+
+    def valid_diagonal?(on:, from:, to:, diagonal:)
+      return false unless diagonal_change?(from, to)
+      step_vector = step_vector_from(to, from)
+      return false unless within_step_limits?(magnitude(step_vector))
+      return false unless is_diagonal_direction?(step_vector, from[:orientation], diagonal)
+      return false if invalid_collisions?(on, from, step_vector[:x].abs)
+      return true
+    end
+
     def valid_non_diagonal?(on:, from:, to:, axis:, direction:)
       return false unless ((axis == :y && vertical_change?(from, to)) || (axis == :x && horizontal_change?(from, to)))
       steps = steps_on_axis(to, from, axis) * direction
@@ -176,15 +186,6 @@ class GameRule
 
     def valid_right?(on:, from:, to:)
       valid_non_diagonal?(on: on, from: from, to: to, axis: :x, direction: 1)
-    end
-
-    def valid_diagonal?(on:, from:, to:, diagonal:)
-      return false unless diagonal_change?(from, to)
-      step_vector = step_vector_from(to, from)
-      return false unless within_step_limits?(magnitude(step_vector))
-      return false unless is_diagonal_direction?(step_vector, from[:orientation], diagonal)
-      return false if invalid_collisions?(on, from, step_vector[:x].abs)
-      return true
     end
 
     def valid_diagonal_forward_left?(on:, from:, to:)
