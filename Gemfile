@@ -29,9 +29,10 @@ gem 'spring',        group: :development
 # gem 'debugger', group: [:development, :test]
 
 group :developemnt, :test do
-    gem 'spring-commands-rspec'
-    gem 'rspec-rails'
-    gem 'guard-rspec'
-    gem 'capybara'
-    gem 'rb-fsevent' if `uname` =~ /Darwin/
+  gem 'spring-commands-rspec'
+  gem 'rspec-rails'
+  gem 'guard-rspec'
+  gem 'capybara'
+  gem 'fabrication'
+  gem 'rb-fsevent' if `uname` =~ /Darwin/
 end

@@ -19,7 +19,7 @@ class GameRules
   # could also check if this is a legal move based on the move containing encoded probabilities (board validation post-game)
   # Move Syntax
   #   { "piece": "[id]", "to": "[x], [y]" }
-  def is_legal_move?(game, move)
+  def is_move_legal?(game, move)
     return false if game.blank? || move.blank?
     # get piece from move (decode move)
     piece = game.piece(move["piece"])
@@ -32,7 +32,7 @@ class GameRules
 
   private
   def get_default_game_rules
-    expand_move_syntax_from default_game_rules_with_simplified_syntax
+    expand_move_syntax_from! default_game_rules_with_simplified_syntax
   end
 
   def default_game_rules_with_simplified_syntax
@@ -66,15 +66,22 @@ class GameRules
     @result_probabilities ||= { strong: [ 0.9 ], weak: [ 0.2 ] }
   end
 
-  def expand_move_syntax_from(rule_set)
+  def expand_move_syntax_from!(rule_set)
     rule_set.each do |rule_element|
-      expand_numeric_steps_in rule_element
-      add_default_steps_to rule_element
-      add_default_collision_rules_to rule_element
-      expand_result_keywords_in rule_element
-      add_default_result_probability_to rule_element
-      expand_move_syntax_in rule_element if rule_element.is_a?(Enumerable)
+      add_defaults_to! rule_element
+      expand_keywords_in! rule_element
     end
+  end
+
+  def add_defaults!(rule_element)
+    add_default_steps_to rule_element
+    # add_default_collision_rules_to rule_element
+    add_default_result_probability_to rule_element
+  end
+
+  def expand_keywords_in!(rule_element)
+    expand_result_keywords_in rule_element
+    expand_move_syntax_from! rule_element if rule_element.is_a?(Enumerable)
   end
 
   def steps_from_fixed_value(value)
@@ -83,11 +90,6 @@ class GameRules
 
   def is_direction_element?(rule_element)
     rule_element.is_a?(Hash) && rule_element[:direction].present?
-  end
-
-  # expand steps: x => steps: { min: x, max: x }
-  def expand_numeric_steps_in(rule_element)
-    rule_element[:steps] = steps_from_fixed_value(rule_element[:steps]) if is_direction_element?(rule_element) && rule_element[:steps].is_a?(Numeric)
   end
 
   # expand :strong/:weak => [ 0.9 ] / [ 0.2 ]
@@ -101,9 +103,9 @@ class GameRules
   end
 
   # expand defaul collisions (blocking)
-  def add_default_collision_rules_to(rule_element)
-    rule_element[:collisions] = :blocking if is_direction_element?(rule_element) && rule_element[:collisions].blank?
-  end
+  # def add_default_collision_rules_to(rule_element)
+  #   rule_element[:collisions] = :blocking if is_direction_element?(rule_element) && rule_element[:collisions].blank?
+  # end
 
   # expand default result ( [90%] )
   def add_default_result_probability_to(rule_element)
