@@ -50,4 +50,11 @@ RSpec.describe Game, :type => :model do
     game.add_piece(name: "pawn", x: 3, y: 4)
     expect(game.piece_on_tile({ x: 3, y: 4 })[:name]).to eq("pawn")
   end
+
+  it "should be able to remove a piece from the board" do
+    game = Fabricate.build(:game)
+    game.add_piece(name: "pawn", x: 3, y: 4)
+    expect(game.remove_piece(x: 3, y: 4)).to eq({ "name" => "pawn" })
+    expect(game.piece_on_tile(x: 3, y: 4)).to eq(:none)
+  end
 end

@@ -65,8 +65,8 @@ RSpec.describe GameRule do
     end
 
     it "should require a direction" do
-      expect(lambda { GameRule.new }).to raise_error
-      expect(lambda { GameRule.new({}) }).to raise_error("Invalid Rule: Must have a direction specified.")
+      expect { GameRule.new }.to raise_error
+      expect { GameRule.new({}) }.to raise_error("Invalid Rule: Must have a direction specified.")
     end
   end # of creation
 
@@ -79,20 +79,20 @@ RSpec.describe GameRule do
       end
 
       it "should require x/y points for to/from" do
-        expect(lambda { @rule.is_valid?(on: @game, to: @valid_to, from: { }) }).to raise_error(ArgumentError, "from must include x, y, and orientation.")
-        expect(lambda { @rule.is_valid?(on: @game, to: @valid_to, from: { x: 1, orientation: 1 }) }).to raise_error(ArgumentError, "from must include x, y, and orientation.")
-        expect(lambda { @rule.is_valid?(on: @game, to: @valid_to, from: { y: 1, orientation: 1 }) }).to raise_error(ArgumentError, "from must include x, y, and orientation.")
-        expect(lambda { @rule.is_valid?(on: @game, to: { }, from: @valid_from) }).to raise_error(ArgumentError, "to must include x and y points.")
-        expect(lambda { @rule.is_valid?(on: @game, to: { x: 1 }, from: @valid_from) }).to raise_error(ArgumentError, "to must include x and y points.")
-        expect(lambda { @rule.is_valid?(on: @game, to: { y: 1 }, from: @valid_from) }).to raise_error(ArgumentError, "to must include x and y points.")
+        expect { @rule.is_valid?(on: @game, to: @valid_to, from: { }) }.to raise_error(ArgumentError, "from must include x, y, and orientation.")
+        expect { @rule.is_valid?(on: @game, to: @valid_to, from: { x: 1, orientation: 1 }) }.to raise_error(ArgumentError, "from must include x, y, and orientation.")
+        expect { @rule.is_valid?(on: @game, to: @valid_to, from: { y: 1, orientation: 1 }) }.to raise_error(ArgumentError, "from must include x, y, and orientation.")
+        expect { @rule.is_valid?(on: @game, to: { }, from: @valid_from) }.to raise_error(ArgumentError, "to must include x and y points.")
+        expect { @rule.is_valid?(on: @game, to: { x: 1 }, from: @valid_from) }.to raise_error(ArgumentError, "to must include x and y points.")
+        expect { @rule.is_valid?(on: @game, to: { y: 1 }, from: @valid_from) }.to raise_error(ArgumentError, "to must include x and y points.")
       end
 
       it "should require orientation for from position" do
-        expect(lambda { @rule.is_valid?(on: @game, to: @valid_to, from: { x: 1, y: 0 }) }).to raise_error(ArgumentError, "from must include x, y, and orientation.")
+        expect { @rule.is_valid?(on: @game, to: @valid_to, from: { x: 1, y: 0 }) }.to raise_error(ArgumentError, "from must include x, y, and orientation.")
       end
 
       it "should require a game board to validate against" do
-        expect(lambda { @rule.is_valid?(on: nil, to: @valid_to, from: @valid_from) }).to raise_error(ArgumentError, "on must be a game model.")
+        expect { @rule.is_valid?(on: nil, to: @valid_to, from: @valid_from) }.to raise_error(ArgumentError, "on must be a game model.")
       end
 
       it "should reject any move where from/to are not on the board" do
@@ -475,6 +475,10 @@ RSpec.describe GameRule do
         expect(rule_with_collisions_disabled.is_valid?(on: @game_with_collisions, from: @default_start_position, to: { x: 3, y: 5 })).to be_truthy
         expect(rule_with_collisions_disabled.is_valid?(on: @game_with_collisions, from: @default_start_position, to: { x: 3, y: 6 })).to be_truthy
       end
+      it "should reject moves that have any collisions for those rules that do not allow any collisions" do
+        rule_with_no_collisions_allowed = GameRule.new({ direction: :forward, collisions: :none })
+        expect(rule_with_no_collisions_allowed.is_valid?(on: @game_with_collisions, from: @default_start_position, to: { x: 3, y: 4 })).to be_falsey
+      end
       describe "rules containing collision restrictions" do
         before(:all) do
           @rule = GameRule.new({ direction: :forward, collisions: :blocking })
@@ -527,12 +531,43 @@ RSpec.describe GameRule do
       rule = GameRule.new({ direction: :forward })
       expect(rule.all_valid_moves(on: @game_with_collisions, from_positions: @default_start_position)).to contain_exactly({ x: 3, y: 4, orientation: 1 })
     end
-    it "should validate moves on rules with compound directions" do
-      rule = GameRule.new({ direction: [ { direction: :forward,  steps: 2, collisions: :disabled }, { direction: :right,  steps: 1 } ], steps: 1 })
-      expect(rule.all_valid_moves(on: @game, from_positions: @default_start_position)).to contain_exactly({ x: 4, y: 5, orientation: 1 })
-      rule = GameRule.new({ direction: [ { direction: :forward, collisions: :disabled }, { direction: :right,  steps: 1 } ], steps: 1 })
-      interesting_rule_moves = [{:x=>4, :y=>4, :orientation=>1}, {:x=>4, :y=>5, :orientation=>1}, {:x=>4, :y=>6, :orientation=>1}, {:x=>4, :y=>7, :orientation=>1}, {:x=>4, :y=>8, :orientation=>1}]
-      expect(rule.all_valid_moves(on: @game, from_positions: @default_start_position)).to match(interesting_rule_moves)
+    describe "on rules with compound directions" do
+      it "should return moves that have no collisions" do
+        rule = GameRule.new({ direction: [ { direction: :forward,  steps: 2, collisions: :disabled }, { direction: :right,  steps: 1 } ], steps: 1 })
+        expect(rule.all_valid_moves(on: @game, from_positions: @default_start_position)).to contain_exactly({ x: 4, y: 5, orientation: 1 })
+        rule = GameRule.new({ direction: [ { direction: :forward, collisions: :disabled }, { direction: :right,  steps: 1 } ], steps: 1 })
+        interesting_rule_moves = [{:x=>4, :y=>4, :orientation=>1}, {:x=>4, :y=>5, :orientation=>1}, {:x=>4, :y=>6, :orientation=>1}, {:x=>4, :y=>7, :orientation=>1}, {:x=>4, :y=>8, :orientation=>1}]
+        expect(rule.all_valid_moves(on: @game, from_positions: @default_start_position)).to match(interesting_rule_moves)
+      end
+      describe "that involve collisions" do
+        it "should return moves with valid collisions" do
+          game = Fabricate.build(:game)
+          game.add_piece(name: "pawn", x: 3, y: 4)
+          game.add_piece(name: "pawn", x: 3, y: 5)
+          game.add_piece(name: "pawn", x: 4, y: 5)
+          rule = GameRule.new({ direction: [ { direction: :forward,  steps: 2, collisions: :disabled }, { direction: :right,  steps: 1 } ], steps: 1 })
+          expect(rule.all_valid_moves(on: game, from_positions: @default_start_position)).to contain_exactly({ x: 4, y: 5, orientation: 1 })
+        end
+        it "should return moves on rules with weird, and probably unexpected, collisions (blocking causes iteresting effects with compound rules)" do
+          game = Fabricate.build(:game)
+          game.add_piece(name: "pawn", x: 3, y: 4)
+          weird_rule = GameRule.new({ direction: [ { direction: :forward, collisions: :blocking }, { direction: :right,  steps: 1 } ], steps: 1 })
+          expected_moves = [{ x: 4, y: 4, orientation: 1 }]
+          expect(weird_rule.all_valid_moves(on: game, from_positions: @default_start_position)).to match(expected_moves)
+        end
+        it "should return valid moves on compound directions (this is probably what was expected)" do
+          game = Fabricate.build(:game)
+          game.add_piece(name: "pawn", x: 3, y: 4)
+          game.add_piece(name: "pawn", x: 3, y: 5)
+          rule = GameRule.new({ direction: [ { direction: :forward, collisions: :none }, { direction: :right,  steps: 1 } ], steps: 1 })
+
+          expect(rule.all_valid_moves(on: game, from_positions: @default_start_position)).to match([])
+          
+          game.remove_piece({ x: 3, y: 4 })
+          expected_moves = [{ x: 4, y: 4, orientation: 1 }]
+          expect(rule.all_valid_moves(on: game, from_positions: @default_start_position)).to match(expected_moves)
+        end
+      end
     end
   end
 end

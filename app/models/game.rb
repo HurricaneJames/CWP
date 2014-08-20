@@ -33,6 +33,10 @@ class Game < ActiveRecord::Base
     board[tile_id_for(x, y)] = new_id
   end
 
+  def remove_piece(x:, y:)
+    pieces[board.delete(tile_id_for(x, y)).to_s]
+  end
+
   private
     def tile_id_for(x, y); "#{x},#{y}"; end
 

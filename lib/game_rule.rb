@@ -11,6 +11,7 @@
 #   disabled - ignore all (note: this is only useful for compound moves such as the knights, otherwise it means two pieces would occupy the same square.)
 #   jumping  - ignore all but last in direction
 #   all      - attack all squares between current position and target
+#   none     - no collisions are allowed for this piece
 #
 #   For the future: Think about Collision Types - would it be nice to be able to have lots of different types of collisiosn
 #       { type: [blocking/disabled/jumping/all], min: [x], max: [y] }
@@ -117,7 +118,7 @@ class GameRule
     def invalid_collisions?(game_board, from, steps)
       return false unless uses_blocking_collisions?
       from_position = from.dup
-      (1..steps-1).each { |step| return true unless game_board.piece_on_tile(next_tile!(from_position)) == :none }
+      (1..steps-(@collisions == :none ? 0 : 1)).each { |step| return true unless game_board.piece_on_tile(next_tile!(from_position)) == :none }
       return false
     end
 
