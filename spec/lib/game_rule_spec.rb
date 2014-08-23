@@ -1,7 +1,5 @@
 require 'rails_helper'
 
-# require 'game_rule'
-
 def valid_rule_description
   { direction: :forward }
 end
@@ -522,8 +520,8 @@ RSpec.describe GameRule do
     it "should return valid moves for unlimited step rules" do
       rule = GameRule.new({ direction: :forward })
       straight_positions = [ { x: 3, y: 4, orientation: 1 }, { x: 3, y: 5, orientation: 1 }, { x: 3, y: 6, orientation: 1 },
-                             { x: 3, y: 7, orientation: 1 }, { x: 3, y: 8, orientation: 1 } ]
-      expect(rule.all_valid_moves(on: @game, from_positions: @default_start_position)).to match(straight_positions)
+                             { x: 3, y: 7, orientation: 1 } ]
+      expect(rule.all_valid_moves(on: @game, from_positions: @default_start_position)).to match_array(straight_positions)
     end
     it "should not return moves with invalid collisions" do
       game = Fabricate.build(:game)
@@ -536,8 +534,11 @@ RSpec.describe GameRule do
         rule = GameRule.new({ direction: [ { direction: :forward,  steps: 2, collisions: :disabled }, { direction: :right,  steps: 1 } ], steps: 1 })
         expect(rule.all_valid_moves(on: @game, from_positions: @default_start_position)).to contain_exactly({ x: 4, y: 5, orientation: 1 })
         rule = GameRule.new({ direction: [ { direction: :forward, collisions: :disabled }, { direction: :right,  steps: 1 } ], steps: 1 })
-        interesting_rule_moves = [{:x=>4, :y=>4, :orientation=>1}, {:x=>4, :y=>5, :orientation=>1}, {:x=>4, :y=>6, :orientation=>1}, {:x=>4, :y=>7, :orientation=>1}, {:x=>4, :y=>8, :orientation=>1}]
-        expect(rule.all_valid_moves(on: @game, from_positions: @default_start_position)).to match(interesting_rule_moves)
+        interesting_rule_moves = [
+          { x: 4, y: 4, orientation: 1 }, { x: 4, y: 5, orientation: 1 },
+          { x: 4, y: 6, orientation: 1 }, { x: 4, y: 7, orientation: 1 }
+        ]
+        expect(rule.all_valid_moves(on: @game, from_positions: @default_start_position)).to match_array(interesting_rule_moves)
       end
       describe "that involve collisions" do
         it "should return moves with valid collisions" do

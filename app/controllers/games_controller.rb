@@ -14,7 +14,16 @@ class GamesController < ApplicationController
 
   # GET /games/new
   def new
-    @game = Game.new
+    @game = GameMaster.new_game
+    respond_to do |format|
+      if @game.save
+        format.html { redirect_to @game }
+        format.json { render :show, status: created, location: @game }
+      else
+        format.html { redirect_to games_url, 'Unable to create game.' }
+        format.json { render json: @game.errors, status: :unprocessable_entity }
+      end
+    end
   end
 
   # GET /games/1/edit
