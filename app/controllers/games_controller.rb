@@ -1,5 +1,17 @@
 class GamesController < ApplicationController
-  before_action :set_game, only: [:show, :edit, :update, :destroy]
+  before_action :set_game, only: [:show, :edit, :update, :destroy, :move]
+
+  def move
+    logger.debug("***** MOVING ***** ")
+    logger.debug("    move: #{params[:move]}")
+    @game.move(move_string: params[:move])
+    @game.save
+    respond_to do |format|
+      format.html { render :show }
+      # need error handling, but will add when writing tests for json based javascript interface
+      format.json { render :show, status: :ok, location: @game }
+    end
+  end
 
   # GET /games
   # GET /games.json

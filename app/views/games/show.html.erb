@@ -1,5 +1,33 @@
 <p id="notice"><%= notice %></p>
 
+<table border=1>
+  <% 7.downto(0).each do |row_id| %>
+  <tr id="row_<%= row_id %>">
+    <td class="row_index"><%= row_id %></td>
+    <% (0..7).each do |column_id| %>
+    <td id="<%= "#{column_id},#{row_id}" %>">
+      <% piece = @game.piece_on_tile({ x: column_id, y: row_id }) %>
+      <%= piece.is_a?(Enumerable) ? piece[:name] : '' %>
+    </td>
+    <% end %>
+  </tr>
+  <% end %>
+  <tr class="column_indices">
+  <td>Y/X</td>
+  <% (0..7).each do |column_id| %>
+    <td class="column_index"><%= column_id %></td>
+  <% end %>
+  </tr>
+</table>
+
+<div class="move_form">
+  <%= form_tag({controller: 'games', action: 'move'}, method: 'post', class: 'move_form') do %>
+    <%= label_tag :move %>
+    <%= text_field_tag :move %>
+    <%= submit_tag "Move" %>
+  <% end %>
+</div>
+
 <p>
   <strong>Current state:</strong>
   <%= @game.current_state %>

@@ -1,5 +1,7 @@
 Rails.application.routes.draw do
-  resources :games
+  resources :games do
+    post 'move', on: :member
+  end
 
   root 'games#index'
 

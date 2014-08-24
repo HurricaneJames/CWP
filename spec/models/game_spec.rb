@@ -57,7 +57,7 @@ RSpec.describe Game, :type => :model do
   it "should be able to remove a piece from the board" do
     game = Fabricate.build(:game)
     game.add_piece(name: "pawn", x: 3, y: 4)
-    expect(game.remove_piece(x: 3, y: 4)).to eq({ "name" => "pawn", "orientation" => 1 })
+    expect(game.remove_piece(x: 3, y: 4)).to eq({ "id" => "0", "name" => "pawn", "orientation" => 1 })
     expect(game.piece_on_tile(x: 3, y: 4)).to eq(:none)
   end
 
@@ -76,5 +76,29 @@ RSpec.describe Game, :type => :model do
       { x: 4, y: 4, orientation: 1 }
     ]
     expect(game.all_legal_moves_for_piece(0)).to match_array(valid_pawn_moves)
+  end
+
+  it "should be able to move a piece" do
+    game = Fabricate.build(:game)
+    game.add_piece(name: "pawn", x: 3, y: 3)
+    game.move(from: {x: 3, y: 3}, to: { x: 3, y: 4 })
+    expect(game.piece_on_tile({ x: 3, y: 3 })).to eq(:none)
+    expect(game.piece_on_tile({ x: 3, y: 4 })[:name]).to eq("pawn")
+  end
+
+  it "should be able to move a piece based on move syntax (x,y:x',y')" do
+    game = Fabricate.build(:game)
+    game.add_piece(name: "pawn", x: 3, y: 3)
+    game.move(move_string: '3,3:3,4')
+    expect(game.piece_on_tile({ x: 3, y: 3 })).to eq(:none)
+    expect(game.piece_on_tile({ x: 3, y: 4 })[:name]).to eq("pawn")
+  end
+
+  it "should track moves" do
+    game = Fabricate.build(:game)
+    game.add_piece(name: "pawn", x: 3, y: 3)
+    game.move(move_string: '3,3:3,4')
+    game.move(move_string: '3,4:3,5')
+    expect(game.moves).to eq('3,3:3,4;3,4:3,5;')
   end
 end
