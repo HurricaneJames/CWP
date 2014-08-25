@@ -1,2 +1,0 @@
-== Chess with Possibilities
-This is an implementation of the Chess with Possibilities game.
