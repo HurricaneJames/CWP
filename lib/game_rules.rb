@@ -93,34 +93,4 @@ class GameRules
                 { direction: :diagonal_backward_left, steps: 1 }, { direction: :diagonal_backward_right, steps: 1 } ]
     }
   end
-
-  # def result_probabilities
-  #   @result_probabilities ||= { strong: [ 0.9 ], weak: [ 0.2 ] }
-  # end
-
-  # def expand_move_syntax_from!(rule_set)
-  #   rule_set.each do |rule_element|
-  #     expand_keywords_in! rule_element
-  #   end
-  # end
-
-  # def expand_keywords_in!(rule_element)
-  #   expand_result_keywords_in rule_element
-  #   expand_move_syntax_from! rule_element if rule_element.is_a?(Enumerable)
-  # end
-
-  # def is_direction_element?(rule_element)
-  #   rule_element.is_a?(Hash) && rule_element[:direction].present?
-  # end
-
-  # # expand :strong/:weak => [ 0.9 ] / [ 0.2 ]
-  # def expand_result_keywords_in(rule_element)
-  #   rule_element[:result] = result_probabilities[rule_element[:result]] if is_direction_element?(rule_element) && rule_element[:result].present?
-  # end
-
-  # # expand default result ( [90%] )
-  # def add_default_result_probability_to(rule_element)
-  #   rule_element[:result] = result_probabilities[:strong] if is_direction_element?(rule_element) && rule_element[:result].blank?
-  # end
-
 end
