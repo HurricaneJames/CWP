@@ -7,7 +7,7 @@
     <% (0..7).each do |column_id| %>
     <td id="<%= "#{column_id},#{row_id}" %>">
       <% piece = @game.piece_on_tile({ x: column_id, y: row_id }) %>
-      <%= piece.is_a?(Enumerable) ? piece[:name] : '' %>
+      <%= piece.is_a?(Enumerable) ? "#{piece[:name]}[#{@game.id_piece_on_tile({ x: column_id, y: row_id })}]" : '' %>
     </td>
     <% end %>
   </tr>
