@@ -75,8 +75,11 @@ class GameRule
   def collisions(on:, from:, to:)
     return collisions_on_compound_rule(on, from, to) if @direction.is_a?(Array)
     return [] if @collisions == :disabled
-    rough_collisions = results_of_move(on: on, from: from, to: to).select { |step| step[:piece] != :none }
+    traveled_tiles = results_of_move(on: on, from: from, to: to)
+    return :invalid_rule unless same_tile?(to, traveled_tiles.last[:tile])
+    rough_collisions = traveled_tiles.select { |step| step[:piece] != :none }
     return :invalid_collisions if !rough_collisions.empty? && invalid_collisions_on_walk(rough_collisions, from, to)
+    rough_collisions = (same_tile?(to, rough_collisions.last[:tile]) ? [rough_collisions.last] : [] ) if @collisions == :jumping
     return rough_collisions
   end
 
@@ -127,7 +130,7 @@ class GameRule
     return all_traveled_tiles_for_compound_rule(game, from, to) if @direction.is_a?(Array)
     results = []
     current_position = from.dup
-    results << { rule_properties: { rule: self, step: results.length } }.merge!(current_position)  until (same_tile?(current_position, to) || game.piece_on_tile(next_tile!(current_position)) == :off_board || (@steps[:max] > 0 && results.length >= @steps[:max]))
+    results << { rule_properties: { rule: self, step: results.length } }.merge!(current_position) until (same_tile?(current_position, to) || game.piece_on_tile(next_tile!(current_position)) == :off_board || (@steps[:max] > 0 && results.length >= @steps[:max]))
     results = nil if results.length < @steps[:min]
     return results
   end

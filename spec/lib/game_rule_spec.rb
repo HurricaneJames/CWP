@@ -718,20 +718,28 @@ RSpec.describe GameRule do
       rule = GameRule.new({ direction: :forward })
       expect(rule.collisions(on: game, from: @starting_point, to: { x: 3, y: 5 })).to eq(:invalid_collisions)
     end
+    it "should return :invalid_rule when a rule violates step restraits" do
+      rule = GameRule.new( { direction: :forward, steps: 2 })
+      expect(rule.collisions(on: @game_with_collisions, from: @starting_point, to: { x: 3, y: 4 })).to eq(:invalid_rule)
+    end
     it "should return all collisions for rules that allow :all" do
-      game = Fabricate.build(:game)
-      game.add_piece({ name: "pawn", x: 3, y: 4, orientation: -1 })
-      game.add_piece({ name: "pawn", x: 3, y: 5, orientation: -1 })
-      game.add_piece({ name: "pawn", x: 3, y: 6, orientation: -1 })
       rule = GameRule.new( { direction: :forward, collisions: :all })
       expected_results = [
-        { tile: { x: 3, y: 4, orientation: 1, rule_properties: { rule: rule, step: 3 } }, piece: { "id" => "0", "name" => "pawn", "orientation" => -1 } },
-        { tile: { x: 3, y: 5, orientation: 1, rule_properties: { rule: rule, step: 4 } }, piece: { "id" => "1", "name" => "pawn", "orientation" => -1 } },
-        { tile: { x: 3, y: 6, orientation: 1, rule_properties: { rule: rule, step: 5 } }, piece: { "id" => "2", "name" => "pawn", "orientation" => -1 } }
+        { tile: { x: 3, y: 1, orientation: 1, rule_properties: { rule: rule, step: 0 } }, piece: {"id"=>"11", "name"=>"pawn", "orientation"=>-1 } },
+        { tile: { x: 3, y: 2, orientation: 1, rule_properties: { rule: rule, step: 1 } }, piece: {"id"=> "8", "name"=>"pawn", "orientation"=>-1 } },
+        { tile: { x: 3, y: 4, orientation: 1, rule_properties: { rule: rule, step: 3 } }, piece: {"id"=> "2", "name"=>"pawn", "orientation"=>-1 } },
+        { tile: { x: 3, y: 5, orientation: 1, rule_properties: { rule: rule, step: 4 } }, piece: {"id"=> "5", "name"=>"pawn", "orientation"=>-1 } },
       ]
-      expect(rule.collisions(on: game, from: @starting_point, to: { x: 3, y: 7 })).to eq(expected_results)
+      expect(rule.collisions(on: @game_with_collisions, from: @starting_point, to: { x: 3, y: 7 })).to eq(expected_results)
     end
-    pending "should return jumping collisions"
+    it "should return jumping collisions" do
+      rule = GameRule.new( { direction: :forward, steps: 2, collisions: :jumping })
+      expected_results = [
+        { tile: { x: 3, y: 2, orientation: 1, rule_properties: { rule: rule, step: 1 } }, piece: {"id"=> "8", "name"=>"pawn", "orientation"=>-1 } },
+      ]
+      expect(rule.collisions(on: @game_with_collisions, from: @starting_point, to: { x: 3, y: 2 })).to eq(expected_results)
+      expect(rule.collisions(on: @game_with_collisions, from: { x: 3, y: 1, orientation: 1 }, to: { x: 3, y: 3 })).to eq([])
+    end
     pending "should return invalid_collisions when :none specified"
     pending "should return [] when no collisions"
     pending "should return [] when collisions are :disabled"
