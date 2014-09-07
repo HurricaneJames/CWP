@@ -76,7 +76,7 @@ class GameRule
     return collisions_on_compound_rule(on, from, to) if @direction.is_a?(Array)
     return [] if @collisions == :disabled
     traveled_tiles = results_of_move(on: on, from: from, to: to)
-    return :invalid_rule unless same_tile?(to, traveled_tiles.last[:tile])
+    return :invalid_move unless same_tile?(to, traveled_tiles.last[:tile])
     rough_collisions = traveled_tiles.select { |step| step[:piece] != :none }
     return :invalid_collisions if !rough_collisions.empty? && invalid_collisions_on_walk(rough_collisions, from, to)
     rough_collisions = (same_tile?(to, rough_collisions.last[:tile]) ? [rough_collisions.last] : [] ) if @collisions == :jumping
@@ -108,12 +108,13 @@ class GameRule
   def collisions_on_compound_rule(game, from, to)
     compound_collisions = []
     intermediate_tiles = find_compound_steps(game, from, to)
+    return :invalid_move if intermediate_tiles.empty?
     current_position = from
     intermediate_tiles.each_with_index do |tile, index|
-      compound_collisions << @direction[index].collisions(on: on, from: current_position, to: tile)
+      compound_collisions << @direction[index].collisions(on: game, from: current_position, to: tile)
       current_position = tile
     end
-    return compound_collisions
+    return compound_collisions.flatten
   end
 
   def get_probability_result(step=0)
@@ -155,7 +156,7 @@ class GameRule
       results = find_compound_steps(game, test_tile, to, step+1)
       return [test_tile, results].flatten if results.present?
     end
-    return nil
+    return []
   end
 
   def set_has_tile?(tile_set, tile)
@@ -187,6 +188,8 @@ class GameRule
     valid_positions = Set.new
     new_position = position.dup
     (1..@steps[:min]).each { |step| next_tile!(new_position) }
+    # note: is_valid? is horribly inefficient, but it works and it gets edge cases,
+    # so I'm not replacing it until I notice a performance reason to do so
     while (is_valid?(on: on, from: position, to: new_position)) do
       valid_positions << new_position
       new_position = next_tile!(new_position.dup)
