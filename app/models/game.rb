@@ -121,7 +121,7 @@ class Game < ActiveRecord::Base
     end
 
     def tile_id_for(x, y); "#{x},#{y}"; end
-    def position_for(tile_id:); puts "Getting Tile For #{tile_id}"; [:x, :y].zip(tile_id.split(',').map { |o| o.to_i }).to_h; end
+    def position_for(tile_id:); [:x, :y].zip(tile_id.split(',').map { |o| o.to_i }).to_h; end
 
     def current_state_must_include_board_and_pieces
       errors.add(:current_state, "must include the board") if board.nil?
