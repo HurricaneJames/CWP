@@ -511,8 +511,6 @@ RSpec.describe GameRule do
   end # of is_valid?
 
   describe "all_valid_moves_from" do
-    pending "should not give moves that have invalid collisions"
-
     it "should return valid moves for rules with fixed steps" do
       rule = GameRule.new({ direction: :forward, steps: 1 })
       expect(rule.all_valid_moves(on: @game, from_positions: @default_start_position)).to contain_exactly({ x: 3, y: 4, orientation: 1 })
