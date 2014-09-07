@@ -81,7 +81,7 @@ RSpec.describe Game, :type => :model do
   it "should be able to move a piece" do
     game = Fabricate.build(:game)
     game.add_piece(name: "pawn", x: 3, y: 3)
-    game.move(from: {x: 3, y: 3}, to: { x: 3, y: 4 })
+    game.move_piece(from: {x: 3, y: 3}, to: { x: 3, y: 4 })
     expect(game.piece_on_tile({ x: 3, y: 3 })).to eq(:none)
     expect(game.piece_on_tile({ x: 3, y: 4 })[:name]).to eq("pawn")
   end
@@ -89,7 +89,7 @@ RSpec.describe Game, :type => :model do
   it "should be able to move a piece based on move syntax (x,y:x',y')" do
     game = Fabricate.build(:game)
     game.add_piece(name: "pawn", x: 3, y: 3)
-    game.move(move_string: '3,3:3,4')
+    game.move('3,3:3,4')
     expect(game.piece_on_tile({ x: 3, y: 3 })).to eq(:none)
     expect(game.piece_on_tile({ x: 3, y: 4 })[:name]).to eq("pawn")
   end
@@ -97,8 +97,23 @@ RSpec.describe Game, :type => :model do
   it "should track moves" do
     game = Fabricate.build(:game)
     game.add_piece(name: "pawn", x: 3, y: 3)
-    game.move(move_string: '3,3:3,4')
-    game.move(move_string: '3,4:3,5')
+    game.move('3,3:3,4')
+    game.move('3,4:3,5')
     expect(game.moves).to eq('3,3:3,4;3,4:3,5;')
   end
+
+  pending "should be able to resolve collisions"
+  # it "should be able to resolve collisions" do
+  #   # implement something ehre when you add (game:, attacker:, defender:)
+  #   # stub both Kernel.rand and Random.rand
+  #   #test_values = [ 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9 ].shuffle
+  #   test_values = [0.2, 0.4, 0.3, 0.7, 0.9, 0.5, 0.1, 0.6, 0.8]
+  #   allow(Random).to receive(:rand).and_return(*test_values)
+  #   puts Random.rand
+  #   puts Random.rand
+  #   puts Random.rand
+  #   puts Random.rand
+  # end
+
+
 end

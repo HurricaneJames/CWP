@@ -10,20 +10,62 @@ class Game < ActiveRecord::Base
   def current_state=(new_state); self[:current_state] = JSON.parse(new_state).with_indifferent_access; end
   def game_rules; @game_rules ||= GameRules.new; end
 
-  def move(move_string: nil, from: nil, to: nil)
-    raise ArgumentError.new, "invlid move parameters" if move_string.blank? && (from.blank? || to.blank?)
+  def move(move_string)
+    raise ArgumentError.new, "invlaid move." if move_string.blank?
     move_positions = move_string.present? ? move_string.split(':') : []
-    piece_id = id_piece_on_tile(from || move_positions[0])
-    return false unless is_legal?(piece_id: piece_id, to: to || position_for(tile_id: move_positions[1]))
-    from_id = move_positions[0] || tile_id_for(from[:x], from[:y])
-    to_id   = move_positions[1] || tile_id_for(to[:x],   to[:y])
+    raise ArgumentError.new, "invalid move." if move_positions.nil? || move_positions[0].blank? || move_positions[1].blank?
+    piece_id = id_piece_on_tile(move_positions[0])
+    return false unless is_legal?(piece_id: piece_id, to: position_for(tile_id: move_positions[1]))
+    #
+    # do any conflict resolution here (probabilities at some point)
+    #
+    board[move_positions[1]] = board.delete(move_positions[0])
+    self.moves = moves.to_s + move_string + ';'
+    return true
+  end
+
+  # todo - DRY up these two move methods
+  def move_piece(from:, to:)
+    raise ArgumentError.new, "invlid move parameters" if (from.blank? || to.blank?)
+    piece_id = id_piece_on_tile(from)
+    return false unless is_legal?(piece_id: piece_id, to: to)
+    from_id = tile_id_for(from[:x], from[:y])
+    to_id   = tile_id_for(to[:x],   to[:y])
     #
     # do any conflict resolution here (probabilities at some point)
     #
     board[to_id] = board.delete(from_id)
-    self.moves = moves.to_s + (move_string || "#{from[:x]},#{from[:y]}:#{to[:x]},#{to[:y]}") + ';'
+    self.moves = moves.to_s + "#{from[:x]},#{from[:y]}:#{to[:x]},#{to[:y]}" + ';'
     return true
   end
+
+  def collision_resolution(piece_id, to)
+    dead_pieces = get_attack_result(piece_id, to)
+    # remove dead pieces from board
+    # return whether this was a successful assult
+    raise "not fully implemented"
+  end
+
+  def get_attack_result(piece_id, to)
+    dead_pieces = []
+    rule = game_rules.legal_rule_for(game: self, move: { id: piece_id, to: to })
+    collisions = rule.get_collisions(from, to)
+    collisions.each do |collision|
+      if attacker_wins_position?(collision)
+        dead_pieces << piece_on_tile(collision)
+      else
+        dead_pieces << piece[piece_id]
+        break
+      end
+    end
+    return dead_pieces
+  end
+
+  def attacker_wins_position?(collision)
+    # todo - add hit points resolve_collision(game:, attacker:, defender:)
+    Random.rand < collision[:probability_result]
+  end
+
 
   def is_legal?(piece_id:, to:)
     game_rules.is_move_legal?(game: self, move: { id: piece_id, to: to })
@@ -41,10 +83,10 @@ class Game < ActiveRecord::Base
   # return the piece on the given tile
   # or :none, :off_board
   def piece_on_tile(tile)
-    raise ArgumentError.new, "invalid tile." if tile.blank? || tile[:x].blank? || tile[:y].blank?
+    raise ArgumentError.new, "(#{tile}) is an invalid tile." if tile.blank? || tile[:x].nil? || tile[:y].nil?
     return :off_board unless on_board?(tile)
     piece_id = id_piece_on_tile(tile)
-    pieces[piece_id].present? ? pieces[piece_id] : :none
+    pieces[piece_id].present? ? pieces[piece_id].merge({ id: piece_id }) : :none
   end
 
   def id_piece_on_tile(tile)

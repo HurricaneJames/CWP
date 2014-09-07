@@ -10,11 +10,28 @@ RSpec.describe GameRule do
     it "should accept {id, to}" do
       move = { id: 0, to: { x: 3, y: 4 } }
       expect(@game_rules.is_move_legal?(game: @game, move: move)).to be_truthy
+      bad_move = { id: 0, to: { x: 3, y: 7 } }
+      expect(@game_rules.is_move_legal?(game: @game, move: bad_move)).to be_falsey
     end
 
     it "should accept 'id:x,y' as {id, to}" do
       move = '0:3,4'
       expect(@game_rules.is_move_legal?(game: @game, move: move)).to be_truthy
+      bad_move = '0:3,7'
+      expect(@game_rules.is_move_legal?(game: @game, move: bad_move)).to be_falsey
+    end
+
+    pending "should get all legal moves for a piece" 
+
+    it "should find the rule that moves a piece to a specific location" do
+      # note: there is nothing in the syntax that prevents multiple rules from allowing the same space.
+      #       however, there is a requirement that no two rules can put a piece on the same time.
+      #       there is no guarantee as to which rule will be selected if that requirement is broken.
+      move = '0:3,4'
+      rule = @game_rules.legal_rule_for(game: @game, move: move)
+      expect(rule).to be_present
+      expect(rule).to be_instance_of(GameRule)
+      expect(rule.is_valid?(on: @game, from: { x: 3, y: 3, orientation: 1 }, to: { x: 3, y: 4 })).to be_truthy
     end
 
     pending "Describe alternative game rule syntax"

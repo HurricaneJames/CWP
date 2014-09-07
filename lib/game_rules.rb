@@ -22,18 +22,27 @@ class GameRules
   # Move Syntax
   #   { "piece": "[id]", "to": "[x], [y]" }
   def is_move_legal?(game:, move:)
-    return false if game.blank? || move.blank?
-    full_move = translate_move(game, move)
-    @game_rules[full_move[:name]].each { |rule| return true if rule.is_valid?(on: game, from: full_move[:from], to: full_move[:to]) }
-    return false
+    # return false if game.blank? || move.blank?
+    # full_move = translate_move(game, move)
+    # @game_rules[full_move[:name]].each { |rule| return true if rule.is_valid?(on: game, from: full_move[:from], to: full_move[:to]) }
+    # return false
+    return legal_rule_for(game: game, move: move).present?
   end
 
   def all_moves_for_piece(game:, piece_id:)
+    # todo - fix this so it does not have to pull so much information from the game (replace: piece_id with piece: { x:, y:, name: })
     move_set = Set.new
     id = piece_id.to_s
     rule_type = game.pieces[id][:name]
     @game_rules[rule_type].each { |rule| move_set.merge(rule.all_valid_moves(on: game, from_positions: game.get_tile_for_piece(id))) }
     return move_set
+  end
+
+  def legal_rule_for(game:, move:)
+    return nil if game.blank? || move.blank?
+    full_move = translate_move(game, move)
+    @game_rules[full_move[:name]].each { |rule| return rule if rule.is_valid?(on: game, from: full_move[:from], to: full_move[:to]) }
+    return nil
   end
 
   private
