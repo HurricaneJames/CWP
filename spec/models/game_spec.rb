@@ -106,9 +106,11 @@ RSpec.describe Game, :type => :model do
   it "should track moves" do
     game = Fabricate.build(:game)
     game.add_piece(name: "pawn", x: 3, y: 3)
+    game.add_piece(name: "pawn", x: 2, y: 5, orientation: -1)
     game.move('3,3:3,4')
+    game.move('2,5:2,4')
     game.move('3,4:3,5')
-    expect(game.moves).to eq('3,3:3,4;3,4:3,5;')
+    expect(game.moves).to eq('3,3:3,4;2,5:2,4;3,4:3,5;')
   end
 
   describe "collisions" do
@@ -157,6 +159,26 @@ RSpec.describe Game, :type => :model do
         {"id"=>"0", "name"=>"charger", "orientation"=> 1, "state" => "3,3"},
       ]
       expect(game.get_results_of_moving_piece("0", { x: 3, y: 7})).to eq(expected_results)
+    end
+  end
+
+  describe "taking turns" do
+    it "should allow a move on that side's turn" do
+      game = Fabricate.build(:game)
+      game.add_piece(name: "pawn", x: 0, y: 1, orientation:  1)
+      game.add_piece(name: "pawn", x: 0, y: 6, orientation: -1)
+      expect(game.move('0,1:0,2')).to be_truthy
+      expect(game.move('0,6:0,5')).to be_truthy
+    end
+
+    it "should not allow a move for the wrong side's turn" do
+      game = Fabricate.build(:game)
+      game.add_piece(name: "pawn", x: 0, y: 1, orientation:  1)
+      game.add_piece(name: "pawn", x: 0, y: 6, orientation: -1)
+      expect(game.move('0,6:0,5')).to be_falsey
+      expect(game.move('0,1:0,2')).to be_truthy
+      expect(game.move('0,2:0,3')).to be_falsey
+      expect(game.move('0,6:0,5')).to be_truthy
     end
   end
 end

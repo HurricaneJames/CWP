@@ -73,7 +73,11 @@ class Game < ActiveRecord::Base
   end
 
   def is_legal?(piece_id:, to:)
-    game_rules.is_move_legal?(game: self, move: { id: piece_id, to: to })
+    can_move_piece_this_turn(piece_id) && game_rules.is_move_legal?(game: self, move: { id: piece_id, to: to })
+  end
+
+  def can_move_piece_this_turn(piece_id)
+    pieces[piece_id.to_s][:orientation] > 0 ? moves.split(';').length.even? : moves.split(';').length.odd?
   end
 
   def all_legal_moves_for_piece(id)
