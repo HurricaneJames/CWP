@@ -4,7 +4,7 @@ class GamesController < ApplicationController
   def move
     logger.debug("***** MOVING ***** ")
     logger.debug("    move: #{params[:move]}")
-    @game.save if @game.move(move_string: params[:move])
+    @game.save if @game.move(params[:move])
     respond_to do |format|
       format.html { render :show }
       # need error handling, but will add when writing tests for json based javascript interface
