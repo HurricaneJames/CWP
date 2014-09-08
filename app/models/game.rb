@@ -11,17 +11,12 @@ class Game < ActiveRecord::Base
   def game_rules; @game_rules ||= GameRules.new; end
 
   def move(move_string)
-    raise ArgumentError.new, "invlaid move." if move_string.blank?
+    raise ArgumentError.new, "Move cannot be empty." if move_string.blank?
     move_positions = move_string.present? ? move_string.split(':') : []
-    raise ArgumentError.new, "invalid move." if move_positions.nil? || move_positions[0].blank? || move_positions[1].blank?
-    piece_id = id_piece_on_tile(move_positions[0])
-    return false unless is_legal?(piece_id: piece_id, to: position_for(tile_id: move_positions[1]))
-    #
-    # do any conflict resolution here (probabilities at some point)
-    #
-    board[move_positions[1]] = board.delete(move_positions[0])
-    self.moves = moves.to_s + move_string + ';'
-    return true
+    raise ArgumentError.new, "Did not describe move or used an invalid syntax." if move_positions.nil? || move_positions[0].blank? || move_positions[1].blank?
+    from = [:x, :y].zip(move_positions[0].split(',').map {|i| i.to_i}).to_h
+    to   = [:x, :y].zip(move_positions[1].split(',').map {|i| i.to_i}).to_h
+    return move_piece(from: from, to: to)
   end
 
   # todo - DRY up these two move methods
@@ -29,43 +24,53 @@ class Game < ActiveRecord::Base
     raise ArgumentError.new, "invlid move parameters" if (from.blank? || to.blank?)
     piece_id = id_piece_on_tile(from)
     return false unless is_legal?(piece_id: piece_id, to: to)
-    from_id = tile_id_for(from[:x], from[:y])
-    to_id   = tile_id_for(to[:x],   to[:y])
-    #
-    # do any conflict resolution here (probabilities at some point)
-    #
-    board[to_id] = board.delete(from_id)
+    change_board_position(piece_id, from, to) if handle_collisions_of_attack(piece_id, to)
     self.moves = moves.to_s + "#{from[:x]},#{from[:y]}:#{to[:x]},#{to[:y]}" + ';'
     return true
   end
 
-  def collision_resolution(piece_id, to)
-    dead_pieces = get_attack_result(piece_id, to)
-    # remove dead pieces from board
-    # return whether this was a successful assult
-    raise "not fully implemented"
+  def change_board_position(piece_id=nil, from = nil, to)
+    raise ArgumentError.new, "either piece_id or from must be valid" if (piece_id.blank? && from.blank?)
+    raise ArgumentError.new, "must specify destination tile" if to.blank?
+    from ||= get_tile_for_piece(piece_id)
+    piece_id ||= id_piece_on_tile(from)
+    from_id = tile_id_for(from[:x], from[:y])
+    to_id   = tile_id_for(to[:x],   to[:y])
+    board[to_id] = board.delete(from_id)
+    pieces[piece_id][:state] = to_id
   end
 
-  def get_attack_result(piece_id, to)
+  def handle_collisions_of_attack(piece_id, to)
+    dead_pieces = get_results_of_moving_piece(piece_id, to)
+    attacker_died = false
+    dead_pieces.each do |piece|
+      kill_piece(piece[:id])
+      attacker_died = attacker_died || piece[:id] == piece_id
+    end
+    return !attacker_died
+  end
+
+  def kill_piece(piece_id)
+    tile = get_tile_for_piece(piece_id)
+    piece = remove_piece(x: tile[:x], y: tile[:y])
+    piece[:state] = :dead
+  end
+
+  # returns the set of pieces that lost (dead pieces)
+  def get_results_of_moving_piece(piece_id, to)
     dead_pieces = []
-    rule = game_rules.legal_rule_for(game: self, move: { id: piece_id, to: to })
-    collisions = rule.get_collisions(from, to)
-    collisions.each do |collision|
-      if attacker_wins_position?(collision)
-        dead_pieces << piece_on_tile(collision)
+    rule = game_rules.legal_rule_for(game: self, move: "#{piece_id}:#{to[:x]},#{to[:y]}")
+    collisions = rule.collisions(on: self, from: get_tile_for_piece(piece_id), to: to)
+    collisions.each do |collision_at|
+      if collision_at[:tile][:rule_properties][:rule].resolve_collision(collision_at)
+        dead_pieces << piece_on_tile(collision_at[:tile])
       else
-        dead_pieces << piece[piece_id]
+        dead_pieces << pieces[piece_id]
         break
       end
     end
     return dead_pieces
   end
-
-  def attacker_wins_position?(collision)
-    # todo - add hit points resolve_collision(game:, attacker:, defender:)
-    Random.rand < collision[:probability_result]
-  end
-
 
   def is_legal?(piece_id:, to:)
     game_rules.is_move_legal?(game: self, move: { id: piece_id, to: to })
@@ -96,18 +101,22 @@ class Game < ActiveRecord::Base
 
   def add_piece(name:, x:, y:, orientation: 1)
     new_id = pieces.length.to_s
-    pieces[new_id] = { id: new_id, name: name, orientation: orientation }
+    pieces[new_id] = { id: new_id, name: name, orientation: orientation, state: "#{x},#{y}" }
     board[tile_id_for(x, y)] = new_id
   end
 
   def remove_piece(x:, y:)
-    pieces[board.delete(tile_id_for(x, y)).to_s]
+    piece_id = board.delete(tile_id_for(x, y)).to_s
+    pieces[piece_id][:state] = ''
+    return pieces[piece_id]
   end
 
+  def add_rule(piece_type, rule); game_rules.add_rule(piece_type, rule); end
+
   def get_tile_for_piece(id)
-    tile_string = board.detect { |tile, piece_id_on_tile| piece_id_on_tile == id }
+    tile_string = tile_id_for_piece(id)
     return nil if tile_string.blank?
-    tile = tile_string.first.split(',')
+    tile = tile_string.split(',')
     return { x: tile[0].to_i, y: tile[1].to_i, orientation: pieces[id][:orientation] }
   end
 
@@ -122,6 +131,8 @@ class Game < ActiveRecord::Base
 
     def tile_id_for(x, y); "#{x},#{y}"; end
     def position_for(tile_id:); [:x, :y].zip(tile_id.split(',').map { |o| o.to_i }).to_h; end
+    # TODO - replace this with pieces[piece_id][:state] - because that is what state is supposed to represent
+    def tile_id_for_piece(piece_id); board.detect { |tile, piece_id_on_tile| piece_id_on_tile == piece_id }.try(:first); end
 
     def current_state_must_include_board_and_pieces
       errors.add(:current_state, "must include the board") if board.nil?

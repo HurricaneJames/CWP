@@ -714,7 +714,7 @@ RSpec.describe GameRule do
       game.add_piece({ name: "pawn", x: 3, y: 5, orientation: -1 })
       rule = GameRule.new({ direction: :forward })
       expected_results = [
-        { tile: { x: 3, y: 5, orientation: 1, rule_properties: { rule: rule, step: 4 } }, piece: {"id"=> "0", "name"=>"pawn", "orientation"=>-1 } }
+        { tile: { x: 3, y: 5, orientation: 1, rule_properties: { rule: rule, step: 4 } }, piece: {"id"=> "0", "name"=>"pawn", "orientation"=>-1, "state" => "3,5"} }
       ]
       expect(rule.collisions(on: game, from: @starting_point, to: { x: 3, y: 5 })).to match(expected_results)
     end
@@ -803,6 +803,21 @@ RSpec.describe GameRule do
         rule = GameRule.new({ direction: rule_parts, steps: 1 })
         expect(rule.collisions(on: @game_with_collisions, from: @starting_point, to: { x: 4, y: 2 })).to eq(:invalid_move)
       end
+    end
+  end
+
+  describe "resolve_collision" do
+    it "should return whether the attacker won the collision" do
+      allow(Random).to receive(:rand).and_return(0.5)
+      rule = GameRule.new({ direction: :forward, result: :strong })
+      collisions = rule.collisions(on: @game_with_collisions, from: @default_start_position, to: { x: 3, y: 4 })
+      expect(rule.resolve_collision(collisions[0])).to eq(true)
+    end
+    it "should respect weak positions" do
+      allow(Random).to receive(:rand).and_return(0.5)
+      rule = GameRule.new({ direction: :forward, result: :weak })
+      collisions = rule.collisions(on: @game_with_collisions, from: @default_start_position, to: { x: 3, y: 4 })
+      expect(rule.resolve_collision(collisions[0])).to eq(false)
     end
   end
 end

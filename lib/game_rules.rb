@@ -17,6 +17,11 @@ class GameRules
     @game_rules = get_default_game_rules.with_indifferent_access
   end
 
+  def add_rule(piece_type, rule)
+    @game_rules[piece_type] ||= []
+    @game_rules[piece_type] << rule unless @game_rules[piece_type].include? rule
+  end
+
   # checks if this is technically a possible move (even if it might not happen due to probabilities going the wrong way)
   # could also check if this is a legal move based on the move containing encoded probabilities (board validation post-game)
   # Move Syntax
@@ -41,8 +46,8 @@ class GameRules
   def legal_rule_for(game:, move:)
     return nil if game.blank? || move.blank?
     full_move = translate_move(game, move)
-    @game_rules[full_move[:name]].each { |rule| return rule if rule.is_valid?(on: game, from: full_move[:from], to: full_move[:to]) }
-    return nil
+    # @game_rules[full_move[:name]].each { |rule| return rule if rule.is_valid?(on: game, from: full_move[:from], to: full_move[:to]) }
+    return @game_rules[full_move[:name]].detect { |rule| rule.is_valid?(on: game, from: full_move[:from], to: full_move[:to]) }
   end
 
   private

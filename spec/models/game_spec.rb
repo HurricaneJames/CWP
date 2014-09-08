@@ -49,15 +49,24 @@ RSpec.describe Game, :type => :model do
     game = Fabricate.build(:game)
     game.add_piece(name: "pawn", x: 3, y: 4)
     expect(game.piece_on_tile({ x: 3, y: 4 })[:name]).to eq("pawn")
+    expect(game.piece_on_tile({ x: 3, y: 4 })[:state]).to eq('3,4')
     game.add_piece(name: "pawn", x: 3, y: 5, orientation: -1)
     expect(game.piece_on_tile({ x: 3, y: 5 })[:name]).to eq("pawn")
     expect(game.piece_on_tile({ x: 3, y: 5 })[:orientation]).to eq(-1)
   end
 
+  it "should be able to kill a piece" do
+    game = Fabricate.build(:game)
+    game.add_piece(name: "pawn", x: 1, y: 1, orientation: 1)
+    game.kill_piece("0")
+    expect(game.piece_on_tile({ x: 1, y: 1 })).to eq(:none)
+    expect(game.pieces["0"][:state]).to eq(:dead)
+  end
+
   it "should be able to remove a piece from the board" do
     game = Fabricate.build(:game)
     game.add_piece(name: "pawn", x: 3, y: 4)
-    expect(game.remove_piece(x: 3, y: 4)).to eq({ "id" => "0", "name" => "pawn", "orientation" => 1 })
+    expect(game.remove_piece(x: 3, y: 4)).to eq({ "id" => "0", "name" => "pawn", "orientation" => 1, "state" => "" })
     expect(game.piece_on_tile(x: 3, y: 4)).to eq(:none)
   end
 
@@ -102,18 +111,52 @@ RSpec.describe Game, :type => :model do
     expect(game.moves).to eq('3,3:3,4;3,4:3,5;')
   end
 
-  pending "should be able to resolve collisions"
-  # it "should be able to resolve collisions" do
-  #   # implement something ehre when you add (game:, attacker:, defender:)
-  #   # stub both Kernel.rand and Random.rand
-  #   #test_values = [ 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9 ].shuffle
-  #   test_values = [0.2, 0.4, 0.3, 0.7, 0.9, 0.5, 0.1, 0.6, 0.8]
-  #   allow(Random).to receive(:rand).and_return(*test_values)
-  #   puts Random.rand
-  #   puts Random.rand
-  #   puts Random.rand
-  #   puts Random.rand
-  # end
-
-
+  describe "collisions" do
+    before(:each) do
+      test_values = [0.2, 0.4, 0.3, 0.7, 0.9, 0.5, 0.1, 0.6, 0.8]
+      allow(Random).to receive(:rand).and_return(*test_values)
+    end
+    pending "should validate a winnder from the move syntax without doing any conflict resolution"
+    it "should be able to determine a winner" do
+      game = Fabricate.build(:game)
+      game.add_piece(name: "pawn", x: 3, y: 3, orientation:  1)
+      game.add_piece(name: "pawn", x: 4, y: 4, orientation: -1)
+      game.move('3,3:4,4')
+      expect(game.piece_on_tile({ x: 4, y: 4 })).to eq({"id" => "0", "name" => "pawn", "orientation" => 1, "state" => "4,4" })
+      expect(game.pieces["1"][:state]).to  eq(:dead)
+    end
+    it "should get the results of an attack on a tile" do
+      game = Fabricate.build(:game)
+      game.add_piece(name: "pawn", x: 3, y: 3, orientation:  1)
+      game.add_piece(name: "pawn", x: 4, y: 4, orientation: -1)
+      expect(game.get_results_of_moving_piece("0", { x: 4, y: 4 })).to eq([{"id"=>"1", "name"=>"pawn", "orientation"=>-1, "state" => "4,4"}])
+    end
+    it "should handle the results of an attack on a tile that is several pieces away" do
+      game = Fabricate.build(:game)
+      game.add_rule("juggernaut", GameRule.new({ direction: :forward, collisions: :all, result: [1.0] }))
+      game.add_piece(name: "juggernaut", x: 3, y: 3, orientation:  1)
+      game.add_piece(name: "pawn", x: 3, y: 4, orientation: -1)
+      game.add_piece(name: "pawn", x: 3, y: 5, orientation: -1)
+      game.add_piece(name: "pawn", x: 3, y: 6, orientation: -1)
+      expected_results = [
+        {"id"=>"1", "name"=>"pawn", "orientation"=>-1, "state" => "3,4" },
+        {"id"=>"2", "name"=>"pawn", "orientation"=>-1, "state" => "3,5" },
+        {"id"=>"3", "name"=>"pawn", "orientation"=>-1, "state" => "3,6" },
+      ]
+      expect(game.get_results_of_moving_piece("0", { x: 3, y: 7})).to eq(expected_results)
+    end
+    it "should stop returning results when the attacking piece is dead" do
+      game = Fabricate.build(:game)
+      game.add_rule("charger", GameRule.new({ direction: :forward, collisions: :all, result: [0.5, 0.25, 0.1, 0.0] }))
+      game.add_piece(name: "charger", x: 3, y: 3, orientation:  1)
+      game.add_piece(name: "pawn", x: 3, y: 4, orientation: -1)
+      game.add_piece(name: "pawn", x: 3, y: 5, orientation: -1)
+      game.add_piece(name: "pawn", x: 3, y: 6, orientation: -1)
+      expected_results = [
+        {"id"=>"1", "name"=>"pawn",    "orientation"=>-1, "state" => "3,4"},
+        {"id"=>"0", "name"=>"charger", "orientation"=> 1, "state" => "3,3"},
+      ]
+      expect(game.get_results_of_moving_piece("0", { x: 3, y: 7})).to eq(expected_results)
+    end
+  end
 end

@@ -18,7 +18,7 @@
 #
 # result: the resulting position (string/weak) when a collision occurs (default: strong)
 #   strong   - [ 90% ] chance of victory
-#   weak     - [ 20% ] chance of victory
+#   weak     - [ 25% ] chance of victory
 #   [x, y, ..., z] %x chance of victory on first tile, %y on second, etc, %z on all tiles after the last percentage
 #       ex. [%75, %50, %25] => %75, %50, %25, %25, %25 if moving 5 tiles
 # special: any special conditions (default: none)
@@ -29,7 +29,7 @@ class GameRule
     # TODO add validation code here to validate params, ex: collisions is correct type, steps is formatted correctly, etc...
     @steps              = expand_steps(rule_params[:steps] || { min: 1, max: 0 })
     @collisions         = rule_params[:collisions] || :blocking
-    @probability_result = rule_params[:result] || [ 0.9 ]
+    @probability_result = decode_probability_result(rule_params[:result]) || [ 0.9 ]
     @special            = rule_params[:special] || {}
 
     if rule_params[:direction].is_a?(Array)
@@ -115,6 +115,10 @@ class GameRule
       current_position = tile
     end
     return compound_collisions.flatten
+  end
+
+  def resolve_collision(collision)
+    Random.rand < get_probability_result(collision[:tile][:rule_properties][:step])
   end
 
   def get_probability_result(step=0)
@@ -206,6 +210,16 @@ class GameRule
   end
 
   # private
+    def decode_probability_result(probability)
+      case probability
+      when :strong
+        [ 0.9 ]
+      when :weak
+        [ 0.25 ]
+      else
+        probability
+      end
+    end
     def same_tile?(a, b); a.present? && b.present? && a[:x] == b[:x] && a[:y] == b[:y]; end
 
     def next_tile!(from)
