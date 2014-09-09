@@ -14,8 +14,8 @@
 ActiveRecord::Schema.define(version: 20140807122154) do
 
   create_table "games", force: true do |t|
-    t.text     "current_state"
-    t.text     "moves"
+    t.text     "current_state", default: "{\"pieces\": {}, \"board\": {}}"
+    t.text     "moves",         default: ""
     t.datetime "created_at"
     t.datetime "updated_at"
   end
