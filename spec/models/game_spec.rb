@@ -160,6 +160,17 @@ RSpec.describe Game, :type => :model do
       ]
       expect(game.get_results_of_moving_piece("0", { x: 3, y: 7})).to eq(expected_results)
     end
+
+    it "should record the pieces that died as a result of the collision(s)" do
+      game = Fabricate.build(:game)
+      game.add_rule("charger", GameRule.new({ direction: :forward, collisions: :all, result: [0.5, 0.25, 0.1, 0.0] }))
+      game.add_piece(name: "charger", x: 3, y: 3, orientation:  1)
+      game.add_piece(name: "pawn", x: 3, y: 4, orientation: -1)
+      game.add_piece(name: "pawn", x: 3, y: 5, orientation: -1)
+      game.add_piece(name: "pawn", x: 3, y: 6, orientation: -1)
+      game.move('3,3:3,7')
+      expect(game.moves.split(';').last).to eq('3,3:3,7:1,0')
+    end
   end
 
   describe "taking turns" do

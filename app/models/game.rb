@@ -24,8 +24,9 @@ class Game < ActiveRecord::Base
     raise ArgumentError.new, "invlid move parameters" if (from.blank? || to.blank?)
     piece_id = id_piece_on_tile(from)
     return false unless is_legal?(piece_id: piece_id, to: to)
-    change_board_position(piece_id, from, to) if handle_collisions_of_attack(piece_id, to)
-    self.moves = moves.to_s + "#{from[:x]},#{from[:y]}:#{to[:x]},#{to[:y]}" + ';'
+    dead_pieces = handle_collisions_of_attack(piece_id, to)
+    change_board_position(piece_id, from, to) unless dead_pieces.split(',').include?(piece_id)
+    self.moves = moves.to_s + "#{from[:x]},#{from[:y]}:#{to[:x]},#{to[:y]}" + (dead_pieces.present? ? ":#{dead_pieces}" : '' ) + ';'
     return true
   end
 
@@ -42,12 +43,12 @@ class Game < ActiveRecord::Base
 
   def handle_collisions_of_attack(piece_id, to)
     dead_pieces = get_results_of_moving_piece(piece_id, to)
-    attacker_died = false
+    collision_results = ""
     dead_pieces.each do |piece|
       kill_piece(piece[:id])
-      attacker_died = attacker_died || piece[:id] == piece_id
+      collision_results << piece[:id] + ','
     end
-    return !attacker_died
+    return collision_results[0...-1]
   end
 
   def kill_piece(piece_id)
