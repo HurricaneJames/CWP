@@ -270,7 +270,46 @@ RSpec.describe Game, :type => :model do
 
       it "should automatically allow a draw after 70 moves with no pieces killed" do
         # note this is different from official checss which requires no pawn moved and mo piece taken for 50 moves
-        (0..34).each do |i|
+        (1..35).each do |i|
+          # there
+          @game.move('0,2:0,3')
+          @game.move('6,5:6,4')
+          # and back
+          @game.move('0,3:0,2')
+          @game.move('6,4:6,5')
+        end
+        @game.move("offer_draw")
+        expect(@game.moves.split(';').last).to eq('draw')
+        expect(@game.game_over?).to be_truthy
+      end
+
+      it "should not grant automatic draw if not 70 moves since last piece taken" do
+        @game.add_piece(name: "pawn", x: 3, y: 3, orientation: 1)
+        @game.add_piece(name: "pawn", x: 4, y: 4, orientation: -1)
+        # note this is different from official checss which requires no pawn moved and mo piece taken for 50 moves
+        (1..10).each do |i|
+          # there
+          @game.move('0,2:0,3')
+          @game.move('6,5:6,4')
+          # and back
+          @game.move('0,3:0,2')
+          @game.move('6,4:6,5')
+        end
+        @game.move('3,3:4,4')
+        @game.move('5,5:5,4')
+        (1..30).each do |i|
+          # there
+          @game.move('0,2:0,3')
+          @game.move('6,5:6,4')
+          # and back
+          @game.move('0,3:0,2')
+          @game.move('6,4:6,5')
+        end
+        @game.move("offer_draw")
+        expect(@game.moves.split(';').last).to_not eq('draw')
+        expect(@game.game_over?).to be_falsey
+        @game.move("reject_draw")
+        (1..5).each do |i|
           # there
           @game.move('0,2:0,3')
           @game.move('6,5:6,4')

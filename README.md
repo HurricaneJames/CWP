@@ -8,10 +8,8 @@ Mostly I'm just playing around at this point. I consider this some of the worst 
 TODO
 ==
   - [ ] draw mechanism
-    - [ ] move: 'offer_draw;' -> 'accept_draw;' or 'decline_draw;'
     - [ ] can only offer once per move
     - [ ] front end has a way to automatically refuse draws
-    - [ ] automatically grant a draw after 70 moves without any pieces captured
   - [ ] develop pawn promotion
     - [ ] move: '5,6:5,7:[anykill]:[name]'
     - [ ] where name => [rook, knight, bishop, queen, etc...]
