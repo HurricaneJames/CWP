@@ -118,7 +118,13 @@ RSpec.describe Game, :type => :model do
       test_values = [0.2, 0.4, 0.3, 0.7, 0.9, 0.5, 0.1, 0.6, 0.8]
       allow(Random).to receive(:rand).and_return(*test_values)
     end
-    pending "should validate a winnder from the move syntax without doing any conflict resolution"
+    it "should validate a winner from the move syntax without doing any conflict resolution" do
+      game = Fabricate.build(:game)
+      game.add_piece(name: "pawn", x: 3, y: 3, orientation:  1)
+      game.add_piece(name: "pawn", x: 4, y: 4, orientation: -1)
+      expect(game.move('3,3:4,4:0')).to be_truthy
+      expect(game.piece_on_tile({ x: 4, y: 4 })).to eq({ "id" => "1", "name" => "pawn", "orientation" => -1, "state" => "4,4" })
+    end
     it "should be able to determine a winner" do
       game = Fabricate.build(:game)
       game.add_piece(name: "pawn", x: 3, y: 3, orientation:  1)
@@ -195,11 +201,16 @@ RSpec.describe Game, :type => :model do
 
   # all pending
   describe "end game resolution" do
+    before(:each) do
+      test_values = [0.2, 0.4, 0.3, 0.7, 0.9, 0.5, 0.1, 0.6, 0.8]
+      allow(Random).to receive(:rand).and_return(*test_values)
+    end
     it "should return 0 winners if neither side has won yet" do
       game = Fabricate.build(:game)
       game.add_piece(name: "pawn", x: 0, y: 0, orientation:  1)
       game.add_piece(name: "king", x: 1, y: 7, orientation: -1)
       expect(game.winner).to eq(0)
+      expect(game.game_over?).to be_falsey
       game.move('0,0:0,1')
       expect(game.winner).to eq(0)
     end
@@ -209,6 +220,7 @@ RSpec.describe Game, :type => :model do
       game.add_piece(name: "king", x: 1, y: 7, orientation: -1)
       game.move('0,6:1,7')
       expect(game.winner).to eq(1)
+      expect(game.game_over?).to be_truthy
     end
     it "should reject any moves after a winner was declared" do
       game = Fabricate.build(:game)
@@ -242,19 +254,22 @@ RSpec.describe Game, :type => :model do
 
       it "should allow the next move to accept the offer to draw" do
         @game.move('offer_draw')
+        expect(@game.game_over?).to be_falsey
         expect(@game.move('accept_draw')).to be_truthy
-        expect(@game.moves).to eq('offer_draw;accept_draw;')
+        expect(@game.game_over?).to be_truthy
+        expect(@game.moves).to eq('offer_draw;draw;')
       end
 
       it "should allow the next move to reject the offer to draw" do
         @game.move('offer_draw')
         expect(@game.move('reject_draw')).to be_truthy
+        expect(@game.game_over?).to be_falsey
         expect(@game.moves).to eq('offer_draw;reject_draw;')
       end
 
       it "should automatically allow a draw after 70 moves with no pieces killed" do
         # note this is different from official checss which requires no pawn moved and mo piece taken for 50 moves
-        (0..35).each do |i|
+        (0..34).each do |i|
           # there
           @game.move('0,2:0,3')
           @game.move('6,5:6,4')
@@ -264,11 +279,24 @@ RSpec.describe Game, :type => :model do
         end
         @game.move("offer_draw")
         expect(@game.moves.split(';').last).to eq('draw')
+        expect(@game.game_over?).to be_truthy
       end
 
-      pending "should reject any moves after a draw"
-      pending "it should not allow the opposing player to move until they respond to the draw"
+      it "should reject any moves after a draw" do
+        @game.move("offer_draw");
+        @game.move("accept_draw");
+        expect(@game.game_over?).to be_truthy
+        expect(@game.move('reject_draw')).to be_falsey
+        expect(@game.move('0,2:0,3')).to be_falsey
+        expect(@game.move('6,5:6,4')).to be_falsey
+      end
+
+      it "should not allow the opposing player to move until they respond to the draw" do
         # note: the UI will have an ability to automatically reject draw offers so this isn't onorous
+        @game.move("offer_draw")
+        expect(@game.move('0,2:0,3')).to be_falsey
+        expect(@game.move('6,5:6,4')).to be_falsey
+      end
     end
 
   end

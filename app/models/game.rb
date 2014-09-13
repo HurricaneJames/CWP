@@ -12,19 +12,20 @@ class Game < ActiveRecord::Base
 
   def move(move_string)
     raise ArgumentError.new, "Move cannot be empty." if move_string.blank?
+    return resolve_draw(move_string) if draw_syntax?(move_string)
     move_positions = move_string.present? ? move_string.split(':') : []
     raise ArgumentError.new, "Did not describe move or used an invalid syntax." if move_positions.nil? || move_positions[0].blank? || move_positions[1].blank?
     from = [:x, :y].zip(move_positions[0].split(',').map {|i| i.to_i}).to_h
     to   = [:x, :y].zip(move_positions[1].split(',').map {|i| i.to_i}).to_h
-    return move_piece(from: from, to: to)
+    dead_pieces = move_positions.fetch(2, nil)
+    return move_piece(from: from, to: to, with_dead_pieces: dead_pieces)
   end
 
-  # todo - DRY up these two move methods
-  def move_piece(from:, to:)
+  def move_piece(from:, to:, with_dead_pieces: nil)
     raise ArgumentError.new, "invlid move parameters" if (from.blank? || to.blank?)
     piece_id = id_piece_on_tile(from)
     return false unless is_legal?(piece_id: piece_id, to: to)
-    dead_pieces = handle_collisions_of_attack(piece_id, to)
+    dead_pieces = handle_collisions_of_attack(piece_id, to, with_dead_pieces)
     dead_piece_ids = dead_pieces.split(',')
     change_board_position(piece_id, from, to) unless dead_piece_ids.include?(piece_id)
     self.moves = moves.to_s + "#{from[:x]},#{from[:y]}:#{to[:x]},#{to[:y]}" +
@@ -53,7 +54,8 @@ class Game < ActiveRecord::Base
     pieces[piece_id][:state] = to_id
   end
 
-  def handle_collisions_of_attack(piece_id, to)
+  def handle_collisions_of_attack(piece_id, to, override_dead_pieces=nil)
+    return override_dead_pieces unless override_dead_pieces.nil?
     dead_pieces = get_results_of_moving_piece(piece_id, to)
     collision_results = ""
     dead_pieces.each do |piece|
@@ -85,6 +87,10 @@ class Game < ActiveRecord::Base
     return dead_pieces
   end
 
+  def game_over?
+    winner != 0 || moves.split(';').last == 'draw'
+  end
+
   def winner
     move_set = moves.split(';')
     return (move_set.length.odd? ? 1 : -1) if move_marked_as_won?(move_set.last)
@@ -96,11 +102,11 @@ class Game < ActiveRecord::Base
   end
 
   def is_legal?(piece_id:, to:)
-    can_move_piece_this_turn(piece_id) && game_rules.is_move_legal?(game: self, move: { id: piece_id, to: to })
+    !game_over? && !pending_draw_resolution? && can_move_piece_this_turn(piece_id) && game_rules.is_move_legal?(game: self, move: { id: piece_id, to: to })
   end
 
   def can_move_piece_this_turn(piece_id)
-    winner == 0 && (pieces[piece_id.to_s][:orientation] > 0 ? moves.split(';').length.even? : moves.split(';').length.odd?)
+    pieces[piece_id.to_s][:orientation] > 0 ? moves.split(';').length.even? : moves.split(';').length.odd?
   end
 
   def all_legal_moves_for_piece(id)
@@ -147,7 +153,33 @@ class Game < ActiveRecord::Base
     return { x: tile[0].to_i, y: tile[1].to_i, orientation: pieces[id][:orientation] }
   end
 
+  def pending_draw_resolution?; moves.split(';').last == "offer_draw"; end
+  def mark(move); self.moves += "#{move};"; end
+
   private
+    def draw_syntax?(string); ["offer_draw", "accept_draw", "reject_draw"].include?(string); end
+    def resolve_draw(move)
+      case move
+      when 'offer_draw'
+        return mark('draw') if should_grant_automatic_draw?
+        return mark(move) unless pending_draw_resolution?
+      when 'accept_draw'
+        return mark("draw") if pending_draw_resolution?
+      when 'reject_draw'
+        return mark(move) if pending_draw_resolution?
+      end
+      return false
+    end
+
+    def should_grant_automatic_draw?
+      move_set = moves.split(";").reject { |move| ["offer_draw", "reject_draw"].include? move }
+      return false if move_set.length < 140 # 140/2 = 70 full moves
+      (move_set.length-140..move_set.length-1).each do |i|
+        return false unless move_set[i].split(':')[2].nil?
+      end
+      return true
+    end
+
     def parse_move_string(move_string)
       move_array = move_string.split(':')
       {
