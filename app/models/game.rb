@@ -39,7 +39,7 @@ class Game < ActiveRecord::Base
     dead_kings = dead_piece_ids.select { |piece_id| pieces[piece_id][:name] == "king" }
     return "draw" if dead_kings.length > 1
     dead_king = dead_kings.first
-    return (pieces[dead_king][:orientation] == attacking_piece_id ? ":lost" : ":won") if dead_kings.length == 1
+    return (pieces[dead_king][:orientation] == attacking_piece_id ? ":lost[#{attacking_piece_id}]" : ":won[#{attacking_piece_id}]") if dead_kings.length == 1
     return ''
   end
 
@@ -92,9 +92,9 @@ class Game < ActiveRecord::Base
   end
 
   def winner
-    move_set = moves.split(';')
-    return (move_set.length.odd? ? 1 : -1) if move_marked_as_won?(move_set.last)
-    return 0
+    match = moves.match(/.*:(won)\[(\d*)\];$/) || moves.match(/.*:(lost)\[(\d*)\];$/)
+    return 0 if match.nil?
+    return (match[1] == "won" ? 1 : -1) * match[2].to_i
   end
 
   def move_marked_as_won?(move)

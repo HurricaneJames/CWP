@@ -219,6 +219,7 @@ RSpec.describe Game, :type => :model do
       game.add_piece(name: "pawn", x: 0, y: 6, orientation:  1)
       game.add_piece(name: "king", x: 1, y: 7, orientation: -1)
       game.move('0,6:1,7')
+      expect(game.moves).to eq("0,6:1,7:1:won[1];")
       expect(game.winner).to eq(1)
       expect(game.game_over?).to be_truthy
     end
