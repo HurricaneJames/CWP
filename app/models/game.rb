@@ -25,9 +25,21 @@ class Game < ActiveRecord::Base
     piece_id = id_piece_on_tile(from)
     return false unless is_legal?(piece_id: piece_id, to: to)
     dead_pieces = handle_collisions_of_attack(piece_id, to)
-    change_board_position(piece_id, from, to) unless dead_pieces.split(',').include?(piece_id)
-    self.moves = moves.to_s + "#{from[:x]},#{from[:y]}:#{to[:x]},#{to[:y]}" + (dead_pieces.present? ? ":#{dead_pieces}" : '' ) + ';'
+    dead_piece_ids = dead_pieces.split(',')
+    change_board_position(piece_id, from, to) unless dead_piece_ids.include?(piece_id)
+    self.moves = moves.to_s + "#{from[:x]},#{from[:y]}:#{to[:x]},#{to[:y]}" +
+      ":#{dead_pieces}" +
+      win_lose_or_normal(dead_piece_ids, pieces[piece_id][:orientation]) +
+      ';'
     return true
+  end
+
+  def win_lose_or_normal(dead_piece_ids, attacking_piece_id)
+    dead_kings = dead_piece_ids.select { |piece_id| pieces[piece_id][:name] == "king" }
+    return "draw" if dead_kings.length > 1
+    dead_king = dead_kings.first
+    return (pieces[dead_king][:orientation] == attacking_piece_id ? ":lost" : ":won") if dead_kings.length == 1
+    return ''
   end
 
   def change_board_position(piece_id=nil, from = nil, to)
@@ -73,12 +85,22 @@ class Game < ActiveRecord::Base
     return dead_pieces
   end
 
+  def winner
+    move_set = moves.split(';')
+    return (move_set.length.odd? ? 1 : -1) if move_marked_as_won?(move_set.last)
+    return 0
+  end
+
+  def move_marked_as_won?(move)
+    move.try(:split, ':').try(:last) == "won"
+  end
+
   def is_legal?(piece_id:, to:)
     can_move_piece_this_turn(piece_id) && game_rules.is_move_legal?(game: self, move: { id: piece_id, to: to })
   end
 
   def can_move_piece_this_turn(piece_id)
-    pieces[piece_id.to_s][:orientation] > 0 ? moves.split(';').length.even? : moves.split(';').length.odd?
+    winner == 0 && (pieces[piece_id.to_s][:orientation] > 0 ? moves.split(';').length.even? : moves.split(';').length.odd?)
   end
 
   def all_legal_moves_for_piece(id)

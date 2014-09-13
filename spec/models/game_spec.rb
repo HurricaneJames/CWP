@@ -110,7 +110,7 @@ RSpec.describe Game, :type => :model do
     game.move('3,3:3,4')
     game.move('2,5:2,4')
     game.move('3,4:3,5')
-    expect(game.moves).to eq('3,3:3,4;2,5:2,4;3,4:3,5;')
+    expect(game.moves).to eq('3,3:3,4:;2,5:2,4:;3,4:3,5:;')
   end
 
   describe "collisions" do
@@ -191,5 +191,85 @@ RSpec.describe Game, :type => :model do
       expect(game.move('0,2:0,3')).to be_falsey
       expect(game.move('0,6:0,5')).to be_truthy
     end
+  end
+
+  # all pending
+  describe "end game resolution" do
+    it "should return 0 winners if neither side has won yet" do
+      game = Fabricate.build(:game)
+      game.add_piece(name: "pawn", x: 0, y: 0, orientation:  1)
+      game.add_piece(name: "king", x: 1, y: 7, orientation: -1)
+      expect(game.winner).to eq(0)
+      game.move('0,0:0,1')
+      expect(game.winner).to eq(0)
+    end
+    it "should declare the winner if the king dies" do
+      game = Fabricate.build(:game)
+      game.add_piece(name: "pawn", x: 0, y: 6, orientation:  1)
+      game.add_piece(name: "king", x: 1, y: 7, orientation: -1)
+      game.move('0,6:1,7')
+      expect(game.winner).to eq(1)
+    end
+    it "should reject any moves after a winner was declared" do
+      game = Fabricate.build(:game)
+      game.add_piece(name: "pawn", x: 0, y: 5, orientation:  1)
+      game.add_piece(name: "king", x: 3, y: 0, orientation:  1)
+      game.add_piece(name: "pawn", x: 5, y: 3, orientation: -1)
+      game.add_piece(name: "king", x: 1, y: 6, orientation: -1)
+      game.move('0,5:1,6')
+      expect(game.move('5,3:5,2')).to be_falsey
+      expect(game.move('1,6:1,7')).to be_falsey
+    end
+
+    pending "should mark the game as lost if the attacker was a king and the attacker died"
+    pending "should mark the game as a draw if the attacker was a king and both the attacker and the opponent's king died"
+
+    pending "should allow a player to conceed"
+    pending "should reject moves after a player conceeds"
+
+    describe "via draw" do
+      before(:each) do
+        @game = Fabricate.build(:game)
+        @game.add_piece(name: "pawn", x: 1, y: 2, orientation:  1)
+        @game.add_piece(name: "king", x: 0, y: 2, orientation:  1)
+        @game.add_piece(name: "pawn", x: 5, y: 5, orientation: -1)
+        @game.add_piece(name: "king", x: 6, y: 5, orientation: -1)
+      end
+      it "should allow an offer to draw" do
+        expect(@game.move('offer_draw')).to be_truthy
+        expect(@game.moves).to eq("offer_draw;");
+      end
+
+      it "should allow the next move to accept the offer to draw" do
+        @game.move('offer_draw')
+        expect(@game.move('accept_draw')).to be_truthy
+        expect(@game.moves).to eq('offer_draw;accept_draw;')
+      end
+
+      it "should allow the next move to reject the offer to draw" do
+        @game.move('offer_draw')
+        expect(@game.move('reject_draw')).to be_truthy
+        expect(@game.moves).to eq('offer_draw;reject_draw;')
+      end
+
+      it "should automatically allow a draw after 70 moves with no pieces killed" do
+        # note this is different from official checss which requires no pawn moved and mo piece taken for 50 moves
+        (0..35).each do |i|
+          # there
+          @game.move('0,2:0,3')
+          @game.move('6,5:6,4')
+          # and back
+          @game.move('0,3:0,2')
+          @game.move('6,4:6,5')
+        end
+        @game.move("offer_draw")
+        expect(@game.moves.split(';').last).to eq('draw')
+      end
+
+      pending "should reject any moves after a draw"
+      pending "it should not allow the opposing player to move until they respond to the draw"
+        # note: the UI will have an ability to automatically reject draw offers so this isn't onorous
+    end
+
   end
 end

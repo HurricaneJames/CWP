@@ -7,16 +7,11 @@ Mostly I'm just playing around at this point. I consider this some of the worst 
 
 TODO
 ==
-  - [ ] develop a way to track who won a battle ("3,3:3,7:p1,p2,p0;")
-    - [ ] note the extra ':'
-    - [ ] p1,p2,p0 = dead list (in this case p0 was the attacker)
-  - [ ] develop a way to win
-    - [ ] take the king
-    - [ ] no kills for 20(?) moves
-    - [ ] draw mechanism
-      - [ ] move: 'offer_draw;' -> 'accept_draw;' or 'decline_draw;'
-      - [ ] can only offer once per move
-      - [ ] front end has a way to automatically refuse draws
+  - [ ] draw mechanism
+    - [ ] move: 'offer_draw;' -> 'accept_draw;' or 'decline_draw;'
+    - [ ] can only offer once per move
+    - [ ] front end has a way to automatically refuse draws
+    - [ ] automatically grant a draw after 70 moves without any pieces captured
   - [ ] develop pawn promotion
     - [ ] move: '5,6:5,7:[anykill]:[name]'
     - [ ] where name => [rook, knight, bishop, queen, etc...]
