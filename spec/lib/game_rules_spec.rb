@@ -46,6 +46,10 @@ RSpec.describe GameRule do
 
   pending "Describe Game Rules (once they are finalized)"
   # pending "describe Pawn motion"
+  it "should give valid promotion options for a pawn" do
+    game_rules = GameRules.new
+    expect(game_rules.promotions_for_move({ type: "pawn", to: { x: 3, y: 7 } })).to eq([:rook, :knight, :bishop, :queen])
+  end
   # pending "describe Rook motion"
   # pending "describe Knight motion"
   # pending "describe Bishop motion"

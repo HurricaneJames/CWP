@@ -50,56 +50,96 @@ class GameRules
     return @game_rules[full_move[:name]].detect { |rule| rule.is_valid?(on: game, from: full_move[:from], to: full_move[:to]) }
   end
 
+  def promotions_for_move(move_params)
+    promotion_rules = @game_rules[:promotion_rules][move_params[:type]] || []
+    promotion_rules.select { |promotion_rule| promotion_conditions_met?(promotion_rule[:conditions], move_params) }.collect { |promotion_rule| promotion_rule[:options] }.flatten.uniq
+  end
+
+  def can_promote?(piece, to, new_type)
+    return false unless valid_type?(new_type)
+    promotion_possibilities = promotions_for_move({ type: piece[:name], to: to })
+    return promotion_possibilities.include? new_type.to_sym
+  end
+
+  def valid_type?(piece_type)
+    @game_rules[piece_type].present?
+  end
+
   private
 
-  # guarantees that move is in correct format
-  def translate_move(game, move)
-    new_move = move.is_a?(String) ? parse_move(move) : move.dup
-    piece_id = new_move[:id].to_s
-    piece = game.pieces[piece_id]
-    new_move[:name]        = piece[:name] unless new_move[:name].present?
-    new_move[:from]        = game.get_tile_for_piece(piece_id) unless new_move[:from].present?
-    return new_move
-  end
+    def promotion_conditions_met?(condition_params, move_params)
+      condition_params.each do |test_on, value|
+        case test_on
+        when "to"
+          return false if value["y"].present? && move_params[:to][:y] != value[:y]
+          return false if value["x"].present? && move_params[:to][:x] != value[:x]
+        else
+          # undefined rule
+          return false
+        end
+      end
+      return true
+    end
 
-  def parse_move(move_string)
-    parts = move_string.split(':')
-    tile = parts[1].split(',')
-    { id: parts[0].to_i, to: { x: tile[0].to_i, y: tile[1].to_i } }
-  end
+    # guarantees that move is in correct format
+    def translate_move(game, move)
+      new_move = move.is_a?(String) ? parse_move(move) : move.dup
+      piece_id = new_move[:id].to_s
+      piece = game.pieces[piece_id]
+      new_move[:name]        = piece[:name] unless new_move[:name].present?
+      new_move[:from]        = game.get_tile_for_piece(piece_id) unless new_move[:from].present?
+      return new_move
+    end
 
-  def get_default_game_rules
-    default_game_rules_with_simplified_syntax.each_with_object({}) { |(piece_type, piece_rules), o| o[piece_type] = piece_rules.map { |rule| GameRule.new(rule) } }
-  end
+    def parse_move(move_string)
+      parts = move_string.split(':')
+      tile = parts[1].split(',')
+      { id: parts[0].to_i, to: { x: tile[0].to_i, y: tile[1].to_i } }
+    end
 
-  def default_game_rules_with_simplified_syntax
-    @piece_normal_move_hash ||= {
-      pawn:   [ { direction: :forward, steps: 1, result: :weak }, { direction: :diagonal_forward_left, steps: 1 }, { direction: :diagonal_forward_right, steps: 1 } ],
-      rook:   [ { direction: :forward }, { direction: :backward }, { direction: :left }, { direction: :right },
-                { direction: :diagonal_forward_left,  steps: 1, result: :weak }, { direction: :diagonal_forward_right,  steps: 1, result: :weak },
-                { direction: :diagonal_backward_left, steps: 1, result: :weak }, { direction: :diagonal_backward_right, steps: 1, result: :weak } ],
-      knight: [ { direction: [ { direction: :forward,  steps: 2, collisions: :disabled }, { direction: :left,  steps: 1 } ], steps: 1 },
-                { direction: [ { direction: :forward,  steps: 2, collisions: :disabled }, { direction: :right, steps: 1 } ], steps: 1 },
-                { direction: [ { direction: :backward, steps: 2, collisions: :disabled }, { direction: :left,  steps: 1 } ], steps: 1 },
-                { direction: [ { direction: :backward, steps: 2, collisions: :disabled }, { direction: :right, steps: 1 } ], steps: 1 },
-                { direction: [ { direction: :left,  steps: 2, collisions: :disabled }, { direction: :forward,  steps: 1 } ], steps: 1 },
-                { direction: [ { direction: :left,  steps: 2, collisions: :disabled }, { direction: :backward, steps: 1 } ], steps: 1 },
-                { direction: [ { direction: :right, steps: 2, collisions: :disabled }, { direction: :forward,  steps: 1 } ], steps: 1 },
-                { direction: [ { direction: :right, steps: 2, collisions: :disabled }, { direction: :backward, steps: 1 } ], steps: 1 },
-                { direction: :diagonal_forward_left,   steps: 2, collisions: :all, result: [0.75, 0.25] },
-                { direction: :diagonal_forward_right,  steps: 2, collisions: :all, result: [0.75, 0.25] },
-                { direction: :diagonal_backward_left,  steps: 2, collisions: :all, result: [0.75, 0.25] },
-                { direction: :diagonal_backward_right, steps: 2, collisions: :all, result: [0.75, 0.25] } ],
-      bishop: [ { direction: :diagonal_forward_left },  { direction: :diagonal_forward_right },
-                { direction: :diagonal_backward_left }, { direction: :diagonal_backward_right },
-                { direction: :forward, steps: 1, result: :weak }, { direction: :backward, steps: 1, result: :weak },
-                { direction: :left,    steps: 1, result: :weak }, { direction: :right,    steps: 1, result: :weak } ],
-      queen:  [ { direction: :forward }, { direction: :backward }, { direction: :left }, { direction: :right },
-                { direction: :diagonal_forward_left },  { direction: :diagonal_forward_right },
-                { direction: :diagonal_backward_left }, { direction: :diagonal_backward_right } ],
-      king:   [ { direction: :forward, steps: 1 }, { direction: :backward, steps: 1 }, { direction: :left, steps: 1 }, { direction: :right, steps: 1 },
-                { direction: :diagonal_forward_left,  steps: 1 }, { direction: :diagonal_forward_right,  steps: 1 },
-                { direction: :diagonal_backward_left, steps: 1 }, { direction: :diagonal_backward_right, steps: 1 } ]
-    }
-  end
+    def get_default_game_rules
+      default_game_rules = default_game_rules_with_simplified_syntax
+      promotion_rules = default_game_rules.delete :promotion_rules
+      default_game_rules.each_with_object({promotion_rules: promotion_rules}) { |(piece_type, piece_rules), o| o[piece_type] = piece_rules.map { |rule| GameRule.new(rule) } }
+    end
+
+    def map_rule_specs_to_objects(specs)
+    end
+
+    def default_game_rules_with_simplified_syntax
+      @piece_normal_move_hash ||= {
+        pawn:   [ { direction: :forward, steps: 1, result: :weak }, { direction: :diagonal_forward_left, steps: 1 }, { direction: :diagonal_forward_right, steps: 1 } ],
+        rook:   [ { direction: :forward }, { direction: :backward }, { direction: :left }, { direction: :right },
+                  { direction: :diagonal_forward_left,  steps: 1, result: :weak }, { direction: :diagonal_forward_right,  steps: 1, result: :weak },
+                  { direction: :diagonal_backward_left, steps: 1, result: :weak }, { direction: :diagonal_backward_right, steps: 1, result: :weak } ],
+        knight: [ { direction: [ { direction: :forward,  steps: 2, collisions: :disabled }, { direction: :left,  steps: 1 } ], steps: 1 },
+                  { direction: [ { direction: :forward,  steps: 2, collisions: :disabled }, { direction: :right, steps: 1 } ], steps: 1 },
+                  { direction: [ { direction: :backward, steps: 2, collisions: :disabled }, { direction: :left,  steps: 1 } ], steps: 1 },
+                  { direction: [ { direction: :backward, steps: 2, collisions: :disabled }, { direction: :right, steps: 1 } ], steps: 1 },
+                  { direction: [ { direction: :left,  steps: 2, collisions: :disabled }, { direction: :forward,  steps: 1 } ], steps: 1 },
+                  { direction: [ { direction: :left,  steps: 2, collisions: :disabled }, { direction: :backward, steps: 1 } ], steps: 1 },
+                  { direction: [ { direction: :right, steps: 2, collisions: :disabled }, { direction: :forward,  steps: 1 } ], steps: 1 },
+                  { direction: [ { direction: :right, steps: 2, collisions: :disabled }, { direction: :backward, steps: 1 } ], steps: 1 },
+                  { direction: :diagonal_forward_left,   steps: 2, collisions: :all, result: [0.75, 0.25] },
+                  { direction: :diagonal_forward_right,  steps: 2, collisions: :all, result: [0.75, 0.25] },
+                  { direction: :diagonal_backward_left,  steps: 2, collisions: :all, result: [0.75, 0.25] },
+                  { direction: :diagonal_backward_right, steps: 2, collisions: :all, result: [0.75, 0.25] } ],
+        bishop: [ { direction: :diagonal_forward_left },  { direction: :diagonal_forward_right },
+                  { direction: :diagonal_backward_left }, { direction: :diagonal_backward_right },
+                  { direction: :forward, steps: 1, result: :weak }, { direction: :backward, steps: 1, result: :weak },
+                  { direction: :left,    steps: 1, result: :weak }, { direction: :right,    steps: 1, result: :weak } ],
+        queen:  [ { direction: :forward }, { direction: :backward }, { direction: :left }, { direction: :right },
+                  { direction: :diagonal_forward_left },  { direction: :diagonal_forward_right },
+                  { direction: :diagonal_backward_left }, { direction: :diagonal_backward_right } ],
+        king:   [ { direction: :forward, steps: 1 }, { direction: :backward, steps: 1 }, { direction: :left, steps: 1 }, { direction: :right, steps: 1 },
+                  { direction: :diagonal_forward_left,  steps: 1 }, { direction: :diagonal_forward_right,  steps: 1 },
+                  { direction: :diagonal_backward_left, steps: 1 }, { direction: :diagonal_backward_right, steps: 1 } ],
+        promotion_rules: {
+          pawn: [
+            { conditions: { to: { y: 7 } }, options: [:rook, :knight, :bishop, :queen ] },
+            { conditions: { to: { y: 0 } }, options: [:rook, :knight, :bishop, :queen ] }
+          ]
+        }
+      }
+    end
 end

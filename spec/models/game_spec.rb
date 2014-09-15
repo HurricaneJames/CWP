@@ -199,7 +199,6 @@ RSpec.describe Game, :type => :model do
     end
   end
 
-  # all pending
   describe "end game resolution" do
     before(:each) do
       test_values = [0.2, 0.4, 0.3, 0.7, 0.9, 0.5, 0.1, 0.6, 0.8]
@@ -216,10 +215,10 @@ RSpec.describe Game, :type => :model do
     end
     it "should declare the winner if the king dies" do
       game = Fabricate.build(:game)
-      game.add_piece(name: "pawn", x: 0, y: 6, orientation:  1)
-      game.add_piece(name: "king", x: 1, y: 7, orientation: -1)
-      game.move('0,6:1,7')
-      expect(game.moves).to eq("0,6:1,7:1:won[1];")
+      game.add_piece(name: "pawn", x: 0, y: 5, orientation:  1)
+      game.add_piece(name: "king", x: 1, y: 6, orientation: -1)
+      game.move('0,5:1,6')
+      expect(game.moves).to eq("0,5:1,6:1:won[1];")
       expect(game.winner).to eq(1)
       expect(game.game_over?).to be_truthy
     end
@@ -338,6 +337,35 @@ RSpec.describe Game, :type => :model do
         expect(@game.move('6,5:6,4')).to be_falsey
       end
     end
+  end
 
+  describe "piece promotion" do
+    it "should allow a pawn to promote" do
+      game = Fabricate.build(:game)
+      game.add_piece(name: "pawn", x: 3, y: 6, orientation:  1)
+      game.add_piece(name: "pawn", x: 3, y: 1, orientation: -1)
+      expect(game.move('3,6:3,7::queen')).to be_truthy
+      expect(game.pieces["0"][:name]).to eq("queen")
+      expect(game.move('3,1:3,0::knight')).to be_truthy
+      expect(game.pieces["1"][:name]).to eq("knight")
+    end
+
+    it "should not allow pawns to promote to invalid pieces types" do
+      game = Fabricate.build(:game)
+      game.add_piece(name: "pawn", x: 3, y: 6, orientation: 1)
+      expect(game.move('3,6:3,7::pawn')).to be_falsey
+      expect(game.piece_on_tile({x: 3, y: 7})).to eq(:none)
+      expect(game.move('3,6:3,7::king')).to be_falsey
+      expect(game.move('3,6:3,7::madeup')).to be_falsey
+    end
+
+    it "should it should reject a move that requires promotion but does not specify a promotion option" do
+      game = Fabricate.build(:game)
+      game.add_piece(name: "pawn", x: 3, y: 6, orientation: 1)
+      expect(game.move('3,6:3,7:')).to be_falsey
+      expect(game.piece_on_tile(x: 3, y: 7)).to eq(:none)
+      expect(game.move('3,6:3,7::')).to be_falsey
+      expect(game.piece_on_tile(x: 3, y: 7)).to eq(:none)
+    end
   end
 end

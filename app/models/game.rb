@@ -18,7 +18,11 @@ class Game < ActiveRecord::Base
     from = [:x, :y].zip(move_positions[0].split(',').map {|i| i.to_i}).to_h
     to   = [:x, :y].zip(move_positions[1].split(',').map {|i| i.to_i}).to_h
     dead_pieces = move_positions.fetch(2, nil)
-    return move_piece(from: from, to: to, with_dead_pieces: dead_pieces)
+    promotion   = move_positions.fetch(3, nil)
+    piece       = piece_on_tile(from)
+    promotion_rules = game_rules.promotions_for_move({ to: to, type: piece[:name] })
+    return false unless (promotion_rules.empty? || game_rules.can_promote?(piece, to, promotion))
+    return move_piece(from: from, to: to, with_dead_pieces: dead_pieces) && (promotion_rules.empty? || promote(piece, promotion))
   end
 
   def move_piece(from:, to:, with_dead_pieces: nil)
@@ -33,6 +37,16 @@ class Game < ActiveRecord::Base
       win_lose_or_normal(dead_piece_ids, pieces[piece_id][:orientation]) +
       ';'
     return true
+  end
+
+  def promote(piece, new_type)
+    pieces[piece[:id]][:name] = new_type.to_s
+  end
+
+  def move_requires_promotion?(from, to)
+    piece = piece_on_tile(:from)
+    return false if piece == :none
+    promotion_rules = game_rules.promotions_for_move(self, { from: from, to: to, type: piece[:name] })
   end
 
   def win_lose_or_normal(dead_piece_ids, attacking_piece_id)
