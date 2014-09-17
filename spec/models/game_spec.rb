@@ -346,8 +346,10 @@ RSpec.describe Game, :type => :model do
       game.add_piece(name: "pawn", x: 3, y: 1, orientation: -1)
       expect(game.move('3,6:3,7::queen')).to be_truthy
       expect(game.pieces["0"][:name]).to eq("queen")
+      expect(game.moves).to eq('3,6:3,7::queen;')
       expect(game.move('3,1:3,0::knight')).to be_truthy
       expect(game.pieces["1"][:name]).to eq("knight")
+      expect(game.moves).to eq('3,6:3,7::queen;3,1:3,0::knight;')
     end
 
     it "should not allow pawns to promote to invalid pieces types" do
@@ -366,6 +368,16 @@ RSpec.describe Game, :type => :model do
       expect(game.piece_on_tile(x: 3, y: 7)).to eq(:none)
       expect(game.move('3,6:3,7::')).to be_falsey
       expect(game.piece_on_tile(x: 3, y: 7)).to eq(:none)
+    end
+
+    it "should not promote a piece if it died in combat" do
+      test_values = [0.9, 0.9]
+      allow(Random).to receive(:rand).and_return(*test_values)
+      game = Fabricate.build(:game)
+      game.add_piece(name: "pawn", x: 3, y: 6, orientation:  1)
+      game.add_piece(name: "pawn", x: 3, y: 7, orientation: -1)
+      expect(game.move('3,6:3,7::queen')).to be_truthy
+      expect(game.pieces["0"][:name]).to eq("pawn")
     end
   end
 end

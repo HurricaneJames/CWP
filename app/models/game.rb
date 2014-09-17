@@ -40,7 +40,11 @@ class Game < ActiveRecord::Base
   end
 
   def promote(piece, new_type)
-    pieces[piece[:id]][:name] = new_type.to_s
+    unless pieces[piece[:id]][:state] == :dead
+      pieces[piece[:id]][:name] = new_type.to_s
+      self.moves = moves.to_s[0..-2] + ":#{new_type};"
+    end
+    return true
   end
 
   def move_requires_promotion?(from, to)
@@ -69,7 +73,7 @@ class Game < ActiveRecord::Base
   end
 
   def handle_collisions_of_attack(piece_id, to, override_dead_pieces=nil)
-    return override_dead_pieces unless override_dead_pieces.nil?
+    return override_dead_pieces unless override_dead_pieces.blank?
     dead_pieces = get_results_of_moving_piece(piece_id, to)
     collision_results = ""
     dead_pieces.each do |piece|
