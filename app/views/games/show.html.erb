@@ -1,5 +1,21 @@
 <p id="notice"><%= notice %></p>
 
+<%= react_component "MessGame", pieces: @game.pieces, board: @game.board %>
+
+<div class="chess-board">
+  <% 7.downto(0).each do |row_id| %>
+  <div class="row">
+    <% (0..7).each do |column_id| %>
+    <div class="small-1 columns game-piece">
+      <% piece = @game.piece_on_tile({ x: column_id, y: row_id }) %>
+      <%= piece.is_a?(Enumerable) ? piece_icon_for(piece[:name], piece[:orientation]) : '' %>
+    </div>
+    <% end%>
+    <div class="small-4 columns"></div>
+  </div>
+  <% end %>
+</div>
+
 <table border=1>
   <% 7.downto(0).each do |row_id| %>
   <tr id="row_<%= row_id %>">

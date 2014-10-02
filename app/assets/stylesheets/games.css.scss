@@ -1,3 +1,26 @@
 // Place all the styles related to the Games controller here.
 // They will automatically be included in application.css.
 // You can use Sass (SCSS) here: http://sass-lang.com/
+$white-square: gold;
+$black-square: darkgoldenrod;
+
+.game-piece {
+  width: 2em;
+  height: 2em;
+  font-size: 2em;
+  line-height: 2em;
+  vertical-align: middle;
+}
+
+.chess-board {
+  .row {
+    &:nth-child(odd) {
+      .columns:nth-child(even) { background-color: $black-square; }
+      .columns:nth-child(odd) { background-color: $white-square; }
+    }
+    &:nth-child(even) {
+      .columns:nth-child(even) { background-color: $white-square; }
+      .columns:nth-child(odd) { background-color: $black-square; }
+    }
+  }
+}
