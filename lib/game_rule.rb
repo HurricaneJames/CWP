@@ -167,10 +167,6 @@ class GameRule
     return possible_tiles.find { |tile| same_tile?(tile, to) }.present?
   end
 
-  def uses_blocking_collisions?
-    !([:disabled, :jumping, :all].include? @collisions)
-  end
-
   def vertical_change?(from, to)
     from[:x] == to[:x]
   end
@@ -232,10 +228,17 @@ class GameRule
 
     # from: { x: [x], y: [y], orientation: [1/-1] }
     def invalid_collisions?(game_board, from, steps)
-      return false unless uses_blocking_collisions?
+      return false if @collisions == :disabled 
       from_position = from.dup
-      (1..steps-(@collisions == :none ? 0 : 1)).each { |step| return true unless game_board.piece_on_tile(next_tile!(from_position)) == :none }
-      return false
+      (1..steps-1).each do |step|
+        piece = game_board.piece_on_tile(next_tile!(from_position))
+        unless piece == :none
+          return true if [:blocking, :none].include?(@collisions) ||
+                         (piece[:orientation] == from[:orientation] && @collisions == :all)
+        end
+      end
+      piece = game_board.piece_on_tile(next_tile!(from_position))
+      return piece != :none && (@collisions == :none || piece[:orientation] == from[:orientation])
     end
 
     def expand_steps(steps)

@@ -493,6 +493,12 @@ RSpec.describe GameRule do
         it "should reject moves that involve more than one collision" do
           expect(@rule.is_valid?(on: @game_with_collisions, from: @default_start_position, to: { x: 3, y: 5 })).to be_falsey
         end
+        it "should reject moves that collide with pieces of the same orientation" do
+          game = Fabricate.build(:game)
+          game.add_piece(name: 'pawn', x: 3, y: 3, orientation: 1)
+          game.add_piece(name: 'pawn', x: 3, y: 4, orientation: 1)
+          expect(@rule.is_valid?(on: game, from: { x: 3, y: 3, orientation: 1 }, to: { x: 3, y: 4 })).to be_falsey
+        end
       end
     end
 
@@ -551,13 +557,13 @@ RSpec.describe GameRule do
           game = Fabricate.build(:game)
           game.add_piece(name: "pawn", x: 3, y: 4)
           game.add_piece(name: "pawn", x: 3, y: 5)
-          game.add_piece(name: "pawn", x: 4, y: 5)
+          game.add_piece(name: "pawn", x: 4, y: 5, orientation: -1)
           rule = GameRule.new({ direction: [ { direction: :forward,  steps: 2, collisions: :disabled }, { direction: :right,  steps: 1 } ], steps: 1 })
           expect(rule.all_valid_moves(on: game, from_positions: @default_start_position)).to contain_exactly({ x: 4, y: 5, orientation: 1 })
         end
         it "should return moves on rules with weird, and probably unexpected, collisions (blocking causes iteresting effects with compound rules)" do
           game = Fabricate.build(:game)
-          game.add_piece(name: "pawn", x: 3, y: 4)
+          game.add_piece(name: "pawn", x: 3, y: 4, orientation: -1)
           weird_rule = GameRule.new({ direction: [ { direction: :forward, collisions: :blocking }, { direction: :right,  steps: 1 } ], steps: 1 })
           expected_moves = [{ x: 4, y: 4, orientation: 1 }]
           expect(weird_rule.all_valid_moves(on: game, from_positions: @default_start_position)).to match(expected_moves)
