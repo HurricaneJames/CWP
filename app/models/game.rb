@@ -115,10 +115,6 @@ class Game < ActiveRecord::Base
     return (match[1] == "won" ? 1 : -1) * match[2].to_i
   end
 
-  def move_marked_as_won?(move)
-    move.try(:split, ':').try(:last) == "won"
-  end
-
   def is_legal?(piece_id:, to:)
     !game_over? && !pending_draw_resolution? && can_move_piece_this_turn(piece_id) && game_rules.is_move_legal?(game: self, move: { id: piece_id, to: to })
   end
@@ -128,6 +124,7 @@ class Game < ActiveRecord::Base
   end
 
   def all_legal_moves_for_piece(id)
+    return [] if game_over? || !can_move_piece_this_turn(id)
     game_rules.all_moves_for_piece(game: self, piece_id: id)
   end
 

@@ -87,6 +87,26 @@ RSpec.describe Game, :type => :model do
     expect(game.all_legal_moves_for_piece(0)).to match_array(valid_pawn_moves)
   end
 
+  it "should not return any legal moves if the game is over" do
+    allow(Random).to receive(:rand).and_return(0.5)
+    game = Fabricate.build(:game)
+    game.add_piece(name: "pawn", x: 3, y: 3)
+    game.add_piece(name: "pawn", x: 1, y: 6, orientation: -1)
+    game.add_piece(name: "king", x: 4, y: 4, orientation: -1)
+    game.move('3,3:4,4')
+    expect(game.all_legal_moves_for_piece(1)).to match_array([])
+  end
+
+  it "should not return any legal moves if it is not the piece's turn" do
+    allow(Random).to receive(:rand).and_return(0.5)
+    game = Fabricate.build(:game)
+    game.add_piece(name: "pawn", x: 3, y: 3)
+    game.add_piece(name: "pawn", x: 1, y: 6, orientation: -1)
+    game.add_piece(name: "king", x: 5, y: 5, orientation: -1)
+    game.move('3,3:4,4')
+    expect(game.all_legal_moves_for_piece(0)).to match_array([])
+  end
+
   it "should be able to move a piece" do
     game = Fabricate.build(:game)
     game.add_piece(name: "pawn", x: 3, y: 3)
