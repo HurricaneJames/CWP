@@ -31,5 +31,9 @@ RSpec.describe GamesController, :type => :routing do
       expect(:delete => "/games/1").to route_to("games#destroy", :id => "1")
     end
 
+    it "routes to #available_moves" do
+      expect(:get => "/games/1/available_moves/2").to route_to("games#available_moves", game_id: "1", piece_id: "2")
+    end
+
   end
 end

@@ -14,25 +14,41 @@ var NO_PIECE = { name: 'none', orientation: '1' };
 
 var MessPiece = React.createClass({displayName: 'MessPiece',
   propTypes: {
-    piece: React.PropTypes.object.isRequired,
-    onMoveOptionsRequested: React.PropTypes.func
+    piece:  React.PropTypes.object.isRequired,
+    row:    React.PropTypes.number.isRequired,
+    column: React.PropTypes.number.isRequired,
+    activePiece:      React.PropTypes.string,
+    moveOptionsCache: React.PropTypes.object.isRequired,
+    onMouseDownOnPiece: React.PropTypes.func,
+    onClickOnPiece:     React.PropTypes.func,
   },
-  showOptions: function(event) {
-    console.debug("Showing Options for: %o", this.props.piece);
-    // pass up to function showMoveOptionsFor(pieceId)
-  },
+  onMouseDown: function(event) { if(this.props.onMouseDownOnPiece && this.props.piece.name != 'none') this.props.onMouseDownOnPiece(this.props.piece.id, event); },
+  onClick:     function(event) { if(this.props.onClickOnPiece     && this.props.piece.name != 'none') this.props.onClickOnPiece(this.props.piece.id, event); },
   getPieceIcons: function(type) { return MESS_PIECE_MAP[type] || MESS_PIECE_MAP.none },
+  shouldHighlight: function() {
+    var moveOptions = this.props.moveOptionsCache[this.props.activePiece]
+    if(!moveOptions) return false;
+    for(var i=0, len=moveOptions.length; i<len; i++) {
+      if (moveOptions[i].x == this.props.column && moveOptions[i].y == this.props.row) { return true;}
+    }
+    return false;
+  },
   render: function() {
-    var gamePieceIcon = this.getPieceIcons(this.props.piece.name)[this.props.piece.orientation];
-    return(<div className="small-1 columns game-piece" onMouseDown={this.showOptions}>{gamePieceIcon}</div>);
+    var gamePieceIcon = this.getPieceIcons(this.props.piece.name)[this.props.piece.orientation]
+      , elementClass  = "small-1 columns game-piece" + (this.shouldHighlight() ? ' possible-tile' : '');
+    return(<div className={elementClass} onMouseDown={this.onMouseDown} onClick={this.onClick}>{gamePieceIcon}</div>);
   }
 });
 
 var BoardRow = React.createClass({displayName: 'BoardRow',
   propTypes: {
-    rowId: React.PropTypes.number.isRequired,
+    rowId:  React.PropTypes.number.isRequired,
     pieces: React.PropTypes.object.isRequired,
-    board: React.PropTypes.object.isRequired
+    board:  React.PropTypes.object.isRequired,
+    activePiece:      React.PropTypes.string,
+    moveOptionsCache: React.PropTypes.object.isRequired,
+    onMouseDownOnPiece: React.PropTypes.func,
+    onClickOnPiece:     React.PropTypes.func,
   },
   pieceOnTile: function(row, column) {
     return(this.props.board[column + ',' + row] || 'none');
@@ -42,7 +58,15 @@ var BoardRow = React.createClass({displayName: 'BoardRow',
   },
   render: function() {
     var columns = [];
-    for(var column=0; column<8; column++) { columns.push(<MessPiece key={column} piece={this.getPiece(column)} />); }
+    for(var column=0; column<8; column++) {
+      columns.push(<MessPiece key={column}
+                              row={this.props.rowId} column={column}
+                              piece={this.getPiece(column)}
+                              activePiece={this.props.activePiece}
+                              moveOptionsCache={this.props.moveOptionsCache}
+                              onMouseDownOnPiece={this.props.onMouseDownOnPiece}
+                              onClickOnPiece={this.props.onClickOnPiece} />);
+    }
     return(
       <div className="row">
         {columns}
@@ -56,12 +80,46 @@ var BoardRow = React.createClass({displayName: 'BoardRow',
 var MessGame = React.createClass({ displayName: 'MessGame',
   propTypes: {
     pieces: React.PropTypes.object.isRequired,
-    board: React.PropTypes.object.isRequired
+    board: React.PropTypes.object.isRequired,
+    gameId: React.PropTypes.number.isRequired,
+  },
+  getInitialState: function() {
+    return { moveOptionsCache: {}, activePiece: undefined };
+  },
+  getMoveOptions: function(pieceId, callback) {
+    var _this = this;
+    if(this.state.moveOptionsCache[pieceId]) { if(callback) callback(this.state.moveOptionsCache[pieceId]); }
+    else {
+      console.debug("Move Options Not in Cache. Fetching from server...");
+      $.ajax({
+        url: Routes.available_moves_on_game_for_piece_path(this.props.gameId, pieceId),
+        dataType: 'json'
+      })
+      .done(function(data, status, jqXHR)  { _this.state.moveOptionsCache[pieceId] = data; _this.setState(_this.state); if(callback) callback(data); })
+      .fail(function(jqXHR, status, error) { console.debug("Failure: %o", error); });
+    }
+  },
+  onMouseDownOnPiece: function(pieceId) {
+    console.debug("Move Options Requested for: %o", pieceId);
+    this.getMoveOptions(pieceId);
+  },
+  onClickOnPiece: function(pieceId) {
+    console.debug("Click: %o", pieceId);
+    this.state.activePiece = this.state.activePiece == pieceId ? undefined : pieceId;
+    this.setState(this.state);
   },
   render: function() {
     var rows = [];
-    console.debug("Board: %o", this.props.board);
-    for(var row=7; row>=0; row--) { rows.push(<BoardRow key={row} rowId={row} pieces={this.props.pieces} board={this.props.board} />); }
+    for(var row=7; row>=0; row--) {
+      rows.push(<BoardRow key={row}
+                          rowId={row}
+                          pieces={this.props.pieces}
+                          board={this.props.board}
+                          activePiece={this.state.activePiece}
+                          moveOptionsCache={this.state.moveOptionsCache}
+                          onMouseDownOnPiece={this.onMouseDownOnPiece}
+                          onClickOnPiece={this.onClickOnPiece} />);
+    }
     return(
       <div className="chess-board">
         {rows}

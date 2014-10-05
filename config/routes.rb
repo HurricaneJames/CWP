@@ -2,6 +2,7 @@ Rails.application.routes.draw do
   resources :games do
     post 'move', on: :member
   end
+  get  '/games/:game_id/available_moves/:piece_id', to: 'games#available_moves', as: 'available_moves_on_game_for_piece'
 
   root 'games#index'
 

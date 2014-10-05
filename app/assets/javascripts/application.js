@@ -16,6 +16,7 @@
 //= require react_ujs
 //= require components
 //= require foundation
+//= require js-routes
 //= require_tree .
 
 $(function(){ $(document).foundation(); });
