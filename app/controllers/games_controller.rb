@@ -12,13 +12,6 @@ class GamesController < ApplicationController
     end
   end
 
-  def available_moves
-    return render(json: '', status: :invalid_parameters) if (params[:game_id].blank? || params[:piece_id].blank?)
-    @game = Game.where(id: params[:game_id]).first
-    puts "Available Moves: #{params[:game_id]} :: #{params[:piece_id]}----- #{@game.all_legal_moves_for_piece(params[:piece_id])}"
-    return render json: @game.all_legal_moves_for_piece(params[:piece_id])
-  end
-
   # GET /games
   # GET /games.json
   def index

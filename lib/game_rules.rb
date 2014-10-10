@@ -34,12 +34,12 @@ class GameRules
     return legal_rule_for(game: game, move: move).present?
   end
 
-  def all_moves_for_piece(game:, piece_id:)
+  def all_moves_for_piece(game:, piece_id:, include_probabilities: false)
     # todo - fix this so it does not have to pull so much information from the game (replace: piece_id with piece: { x:, y:, name: })
     move_set = Set.new
     id = piece_id.to_s
     rule_type = game.pieces[id][:name]
-    @game_rules[rule_type].each { |rule| move_set.merge(rule.all_valid_moves(on: game, from_positions: game.get_tile_for_piece(id))) }
+    @game_rules[rule_type].each { |rule| move_set.merge(rule.all_valid_moves(on: game, from_positions: game.get_tile_for_piece(id), include_probabilities: include_probabilities)) }
     return move_set
   end
 

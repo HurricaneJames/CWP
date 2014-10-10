@@ -92,7 +92,7 @@ var MessGame = React.createClass({ displayName: 'MessGame',
     else {
       console.debug("Move Options Not in Cache. Fetching from server...");
       $.ajax({
-        url: Routes.available_moves_on_game_for_piece_path(this.props.gameId, pieceId),
+        url: "/api/v1/games/" + this.props.gameId + "/available_moves/" + pieceId,
         dataType: 'json'
       })
       .done(function(data, status, jqXHR)  { _this.state.moveOptionsCache[pieceId] = data; _this.setState(_this.state); if(callback) callback(data); })

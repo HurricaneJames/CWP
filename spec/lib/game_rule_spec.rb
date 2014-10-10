@@ -49,6 +49,10 @@ def valid_game_board_state_with_collisions
   }.to_json
 end
 
+def result_tile_for(x:, y:, orientation: 1, probability: 0.9)
+  { x: x, y: y, orientation: orientation, probability: probability }
+end
+
 RSpec.describe GameRule do
   before(:all) do
     @game = Fabricate.build(:game)
@@ -519,36 +523,36 @@ RSpec.describe GameRule do
   describe "all_valid_moves_from" do
     it "should return valid moves for rules with fixed steps" do
       rule = GameRule.new({ direction: :forward, steps: 1 })
-      expect(rule.all_valid_moves(on: @game, from_positions: @default_start_position)).to contain_exactly({ x: 3, y: 4, orientation: 1 })
+      expect(rule.all_valid_moves(on: @game, from_positions: @default_start_position)).to contain_exactly(result_tile_for(x: 3, y: 4))
       rule = GameRule.new({ direction: :forward, steps: 2 })
-      expect(rule.all_valid_moves(on: @game, from_positions: @default_start_position)).to contain_exactly({ x: 3, y: 5, orientation: 1 })
+      expect(rule.all_valid_moves(on: @game, from_positions: @default_start_position)).to contain_exactly(result_tile_for(x: 3, y: 5))
       rule = GameRule.new({ direction: :forward, steps: 3 })
-      expect(rule.all_valid_moves(on: @game, from_positions: @default_start_position)).to contain_exactly({ x: 3, y: 6, orientation: 1 })
+      expect(rule.all_valid_moves(on: @game, from_positions: @default_start_position)).to contain_exactly(result_tile_for(x: 3, y: 6))
     end
     it "should return valid moves for rules with step ranges" do
       rule = GameRule.new({ direction: :forward, steps: { min: 1, max: 2 }})
-      expect(rule.all_valid_moves(on: @game, from_positions: @default_start_position)).to contain_exactly({ x: 3, y: 4, orientation: 1 }, { x: 3, y: 5, orientation: 1 })
+      expect(rule.all_valid_moves(on: @game, from_positions: @default_start_position)).to contain_exactly(result_tile_for(x: 3, y: 4), result_tile_for(x: 3, y: 5))
     end
     it "should return valid moves for unlimited step rules" do
       rule = GameRule.new({ direction: :forward })
-      straight_positions = [ { x: 3, y: 4, orientation: 1 }, { x: 3, y: 5, orientation: 1 }, { x: 3, y: 6, orientation: 1 },
-                             { x: 3, y: 7, orientation: 1 } ]
+      straight_positions = [ result_tile_for(x: 3, y: 4), result_tile_for(x: 3, y: 5), result_tile_for(x: 3, y: 6),
+                             result_tile_for(x: 3, y: 7) ]
       expect(rule.all_valid_moves(on: @game, from_positions: @default_start_position)).to match_array(straight_positions)
     end
     it "should not return moves with invalid collisions" do
       game = Fabricate.build(:game)
       game.add_piece({ name: "pawn", x: 3, y: 4 })
       rule = GameRule.new({ direction: :forward })
-      expect(rule.all_valid_moves(on: @game_with_collisions, from_positions: @default_start_position)).to contain_exactly({ x: 3, y: 4, orientation: 1 })
+      expect(rule.all_valid_moves(on: @game_with_collisions, from_positions: @default_start_position)).to contain_exactly(result_tile_for(x: 3, y: 4))
     end
     describe "on rules with compound directions" do
       it "should return moves that have no collisions" do
         rule = GameRule.new({ direction: [ { direction: :forward,  steps: 2, collisions: :disabled }, { direction: :right,  steps: 1 } ], steps: 1 })
-        expect(rule.all_valid_moves(on: @game, from_positions: @default_start_position)).to contain_exactly({ x: 4, y: 5, orientation: 1 })
+        expect(rule.all_valid_moves(on: @game, from_positions: @default_start_position)).to contain_exactly(result_tile_for(x: 4, y: 5))
         rule = GameRule.new({ direction: [ { direction: :forward, collisions: :disabled }, { direction: :right,  steps: 1 } ], steps: 1 })
         interesting_rule_moves = [
-          { x: 4, y: 4, orientation: 1 }, { x: 4, y: 5, orientation: 1 },
-          { x: 4, y: 6, orientation: 1 }, { x: 4, y: 7, orientation: 1 }
+          result_tile_for(x: 4, y: 4), result_tile_for(x: 4, y: 5),
+          result_tile_for(x: 4, y: 6), result_tile_for(x: 4, y: 7)
         ]
         expect(rule.all_valid_moves(on: @game, from_positions: @default_start_position)).to match_array(interesting_rule_moves)
       end
@@ -559,13 +563,13 @@ RSpec.describe GameRule do
           game.add_piece(name: "pawn", x: 3, y: 5)
           game.add_piece(name: "pawn", x: 4, y: 5, orientation: -1)
           rule = GameRule.new({ direction: [ { direction: :forward,  steps: 2, collisions: :disabled }, { direction: :right,  steps: 1 } ], steps: 1 })
-          expect(rule.all_valid_moves(on: game, from_positions: @default_start_position)).to contain_exactly({ x: 4, y: 5, orientation: 1 })
+          expect(rule.all_valid_moves(on: game, from_positions: @default_start_position)).to contain_exactly(result_tile_for(x: 4, y: 5))
         end
         it "should return moves on rules with weird, and probably unexpected, collisions (blocking causes iteresting effects with compound rules)" do
           game = Fabricate.build(:game)
           game.add_piece(name: "pawn", x: 3, y: 4, orientation: -1)
           weird_rule = GameRule.new({ direction: [ { direction: :forward, collisions: :blocking }, { direction: :right,  steps: 1 } ], steps: 1 })
-          expected_moves = [{ x: 4, y: 4, orientation: 1 }]
+          expected_moves = [result_tile_for(x: 4, y: 4)]
           expect(weird_rule.all_valid_moves(on: game, from_positions: @default_start_position)).to match(expected_moves)
         end
         it "should return valid moves on compound directions (this is probably what was expected)" do
@@ -577,7 +581,7 @@ RSpec.describe GameRule do
           expect(rule.all_valid_moves(on: game, from_positions: @default_start_position)).to match([])
 
           game.remove_piece({ x: 3, y: 4 })
-          expected_moves = [{ x: 4, y: 4, orientation: 1 }]
+          expected_moves = [result_tile_for(x: 4, y: 4)]
           expect(rule.all_valid_moves(on: game, from_positions: @default_start_position)).to match(expected_moves)
         end
         it "should not return any moves that violate :none/:blocking conditions when advancing min steps" do
@@ -597,16 +601,16 @@ RSpec.describe GameRule do
     it "should give all tiles traveled by a simple rule" do
       rule = GameRule.new({direction: :forward})
       expected_results = [
-        { x: 0, y: 1, orientation: 1, rule_properties: { rule: rule, step: 0 } },
-        { x: 0, y: 2, orientation: 1, rule_properties: { rule: rule, step: 1 } }
+        result_tile_for(x: 0, y: 1).merge!( rule_properties: { rule: rule, step: 0 } ),
+        result_tile_for(x: 0, y: 2).merge!( rule_properties: { rule: rule, step: 1 } )
       ]
       expect(rule.all_traveled_tiles(@game, { x: 0, y: 0, orientation: 1 }, { x: 0, y: 2 })).to match(expected_results)
     end
     it "should give only those tiles traveled when limited by step counts" do
       rule = GameRule.new( { direction: :forward, steps: 2 })
       expected_results = [
-        { x: 0, y: 1, orientation: 1, rule_properties: { rule: rule, step: 0 } },
-        { x: 0, y: 2, orientation: 1, rule_properties: { rule: rule, step: 1 } }
+        result_tile_for(x: 0, y: 1).merge!( rule_properties: { rule: rule, step: 0 } ),
+        result_tile_for(x: 0, y: 2).merge!( rule_properties: { rule: rule, step: 1 } )
       ]
       expect(rule.all_traveled_tiles(@game, { x: 0, y: 0, orientation: 1 }, { x: 0, y: 2 })).to match(expected_results)
       expect(rule.all_traveled_tiles(@game, { x: 0, y: 0, orientation: 1 }, { x: 0, y: 1 })).to be_nil
@@ -615,9 +619,9 @@ RSpec.describe GameRule do
       rule_parts = [ GameRule.new({ direction: :forward,  steps: 2, collisions: :disabled }), GameRule.new({ direction: :right,  steps: 1 }) ]
       rule = GameRule.new({ direction: rule_parts, steps: 1 })
       expected_results = [
-        { x: 3, y: 1, orientation: 1, rule_properties: { rule: rule_parts[0], step: 0 } },
-        { x: 3, y: 2, orientation: 1, rule_properties: { rule: rule_parts[0], step: 1 } },
-        { x: 4, y: 2, orientation: 1, rule_properties: { rule: rule_parts[1], step: 0 } }
+        result_tile_for(x: 3, y: 1).merge!( rule_properties: {  rule: rule_parts[0], step: 0  } ),
+        result_tile_for(x: 3, y: 2).merge!( rule_properties: {  rule: rule_parts[0], step: 1  } ),
+        result_tile_for(x: 4, y: 2).merge!( rule_properties: {  rule: rule_parts[1], step: 0  } )
       ]
       expect(rule.all_traveled_tiles(@game, { x: 3, y: 0, orientation: 1 }, { x: 4, y: 2 })).to match(expected_results)
     end
@@ -629,11 +633,11 @@ RSpec.describe GameRule do
       ]
       rule = GameRule.new({ direction: rule_parts, steps: 1 })
       expected_results = [
-        { x: 3, y: 1, orientation: 1, rule_properties: { rule: rule_parts[0], step: 0 } },
-        { x: 3, y: 2, orientation: 1, rule_properties: { rule: rule_parts[0], step: 1 } },
-        { x: 3, y: 3, orientation: 1, rule_properties: { rule: rule_parts[0], step: 2 } },
-        { x: 4, y: 3, orientation: 1, rule_properties: { rule: rule_parts[1], step: 0 } },
-        { x: 4, y: 2, orientation: 1, rule_properties: { rule: rule_parts[2], step: 0 } }
+        result_tile_for(x: 3, y: 1).merge!( rule_properties: { rule: rule_parts[0], step: 0 } ),
+        result_tile_for(x: 3, y: 2).merge!( rule_properties: { rule: rule_parts[0], step: 1 } ),
+        result_tile_for(x: 3, y: 3).merge!( rule_properties: { rule: rule_parts[0], step: 2 } ),
+        result_tile_for(x: 4, y: 3).merge!( rule_properties: { rule: rule_parts[1], step: 0 } ),
+        result_tile_for(x: 4, y: 2).merge!( rule_properties: { rule: rule_parts[2], step: 0 } )
       ]
       expect(rule.all_traveled_tiles(@game, { x: 3, y: 0, orientation: 1 }, { x: 4, y: 2 })).to match(expected_results)
     end
@@ -646,18 +650,18 @@ RSpec.describe GameRule do
       rule = GameRule.new({ direction: rule_parts, steps: 1 })
       valid_walks = [
         [
-          { x: 3, y: 1, orientation: 1, rule_properties: { rule: rule_parts[0], step: 0 } },
-          { x: 3, y: 2, orientation: 1, rule_properties: { rule: rule_parts[0], step: 1 } },
-          { x: 4, y: 2, orientation: 1, rule_properties: { rule: rule_parts[1], step: 0 } },
-          { x: 4, y: 1, orientation: 1, rule_properties: { rule: rule_parts[2], step: 0 } }
+          result_tile_for(x: 3, y: 1).merge!( rule_properties: { rule: rule_parts[0], step: 0 } ),
+          result_tile_for(x: 3, y: 2).merge!( rule_properties: { rule: rule_parts[0], step: 1 } ),
+          result_tile_for(x: 4, y: 2).merge!( rule_properties: { rule: rule_parts[1], step: 0 } ),
+          result_tile_for(x: 4, y: 1).merge!( rule_properties: { rule: rule_parts[2], step: 0 } )
         ],
         [
-          { x: 3, y: 1, orientation: 1, rule_properties: { rule: rule_parts[0], step: 0 } },
-          { x: 3, y: 2, orientation: 1, rule_properties: { rule: rule_parts[0], step: 1 } },
-          { x: 3, y: 3, orientation: 1, rule_properties: { rule: rule_parts[0], step: 2 } },
-          { x: 4, y: 3, orientation: 1, rule_properties: { rule: rule_parts[1], step: 0 } },
-          { x: 4, y: 2, orientation: 1, rule_properties: { rule: rule_parts[2], step: 0 } },
-          { x: 4, y: 1, orientation: 1, rule_properties: { rule: rule_parts[2], step: 1 } }
+          result_tile_for(x: 3, y: 1).merge!( rule_properties: { rule: rule_parts[0], step: 0 } ),
+          result_tile_for(x: 3, y: 2).merge!( rule_properties: { rule: rule_parts[0], step: 1 } ),
+          result_tile_for(x: 3, y: 3).merge!( rule_properties: { rule: rule_parts[0], step: 2 } ),
+          result_tile_for(x: 4, y: 3).merge!( rule_properties: { rule: rule_parts[1], step: 0 } ),
+          result_tile_for(x: 4, y: 2).merge!( rule_properties: { rule: rule_parts[2], step: 0 } ),
+          result_tile_for(x: 4, y: 1).merge!( rule_properties: { rule: rule_parts[2], step: 1 } )
         ],
       ]
       expect(valid_walks).to include(rule.all_traveled_tiles(@game, { x: 3, y: 0, orientation: 1 }, { x: 4, y: 1 }))
@@ -667,12 +671,12 @@ RSpec.describe GameRule do
   describe "find_compound_steps" do
     it "should be able to show all the transitory tiles used in a compound rule" do
       rule = GameRule.new({ direction: [ { direction: :forward,  steps: 2, collisions: :disabled }, { direction: :right,  steps: 1 } ], steps: 1 })
-      expected_results = [ { x: 3, y: 2, orientation: 1 }, { x: 4, y: 2, orientation: 1 } ]
+      expected_results = [ result_tile_for(x: 3, y: 2), result_tile_for(x: 4, y: 2) ]
       expect(rule.find_compound_steps(@game, { x: 3, y: 0, orientation: 1 }, { x: 4, y: 2 })).to match(expected_results)
     end
     it "should be able to show all the transitory tiles used in a weird compound rule" do
       rule = GameRule.new({ direction: [ { direction: :forward, steps: { min: 1, max: 3 }, collisions: :disabled }, { direction: :right,  steps: { min: 1, max: 2 } }, { direction: :backward, steps: 1 }  ], steps: 1 })
-      expected_results = [ { x: 3, y: 3, orientation: 1 }, { x: 4, y: 3, orientation: 1 }, { x: 4, y: 2, orientation: 1 } ]
+      expected_results = [ result_tile_for(x: 3, y: 3), result_tile_for(x: 4, y: 3), result_tile_for(x: 4, y: 2) ]
       expect(rule.find_compound_steps(@game, { x: 3, y: 0, orientation: 1 }, { x: 4, y: 2 })).to match(expected_results)
     end
     it "should not return any compound steps ([]) when there are no valid paths between the two points" do
@@ -686,13 +690,13 @@ RSpec.describe GameRule do
     it "should give the results of each tile traveled for a simple rule" do
       rule = GameRule.new({ direction: :forward })
       expected_results = [
-        { tile: { x: 3, y: 1, orientation: 1, rule_properties: { rule: rule, step: 0 } }, piece: {"id"=>"11", "name"=>"pawn", "orientation"=>-1 } },
-        { tile: { x: 3, y: 2, orientation: 1, rule_properties: { rule: rule, step: 1 } }, piece: {"id"=> "8", "name"=>"pawn", "orientation"=>-1 } },
-        { tile: { x: 3, y: 3, orientation: 1, rule_properties: { rule: rule, step: 2 } }, piece: :none },
-        { tile: { x: 3, y: 4, orientation: 1, rule_properties: { rule: rule, step: 3 } }, piece: {"id"=> "2", "name"=>"pawn", "orientation"=>-1 } },
-        { tile: { x: 3, y: 5, orientation: 1, rule_properties: { rule: rule, step: 4 } }, piece: {"id"=> "5", "name"=>"pawn", "orientation"=>-1 } },
-        { tile: { x: 3, y: 6, orientation: 1, rule_properties: { rule: rule, step: 5 } }, piece: :none },
-        { tile: { x: 3, y: 7, orientation: 1, rule_properties: { rule: rule, step: 6 } }, piece: :none }
+        { tile: result_tile_for(x: 3, y: 1).merge!( rule_properties: {  rule: rule, step: 0  } ), piece: {"id"=>"11", "name"=>"pawn", "orientation"=>-1 } },
+        { tile: result_tile_for(x: 3, y: 2).merge!( rule_properties: {  rule: rule, step: 1  } ), piece: {"id"=> "8", "name"=>"pawn", "orientation"=>-1 } },
+        { tile: result_tile_for(x: 3, y: 3).merge!( rule_properties: {  rule: rule, step: 2  } ), piece: :none },
+        { tile: result_tile_for(x: 3, y: 4).merge!( rule_properties: {  rule: rule, step: 3  } ), piece: {"id"=> "2", "name"=>"pawn", "orientation"=>-1 } },
+        { tile: result_tile_for(x: 3, y: 5).merge!( rule_properties: {  rule: rule, step: 4  } ), piece: {"id"=> "5", "name"=>"pawn", "orientation"=>-1 } },
+        { tile: result_tile_for(x: 3, y: 6).merge!( rule_properties: {  rule: rule, step: 5  } ), piece: :none },
+        { tile: result_tile_for(x: 3, y: 7).merge!( rule_properties: {  rule: rule, step: 6  } ), piece: :none }
       ]
       expect(rule.results_of_move(on: @game_with_collisions, from: { x: 3, y: 0, orientation: 1 }, to: { x: 3, y: 7 })).to match(expected_results)
     end
@@ -703,9 +707,9 @@ RSpec.describe GameRule do
       ]
       rule = GameRule.new({ direction: rule_parts, steps: 1 })
       expected_results = [
-        { tile: { x: 3, y: 1, orientation: 1, rule_properties: { rule: rule_parts[0], step: 0 } }, piece: {"id"=>"11", "name"=>"pawn", "orientation"=>-1 } },
-        { tile: { x: 3, y: 2, orientation: 1, rule_properties: { rule: rule_parts[0], step: 1 } }, piece: {"id"=> "8", "name"=>"pawn", "orientation"=>-1 } },
-        { tile: { x: 4, y: 2, orientation: 1, rule_properties: { rule: rule_parts[1], step: 0 } }, piece: {"id"=> "9", "name"=>"pawn", "orientation"=>-1 } },
+        { tile: result_tile_for(x: 3, y: 1).merge!( rule_properties: {  rule: rule_parts[0], step: 0  } ), piece: {"id"=>"11", "name"=>"pawn", "orientation"=>-1 } },
+        { tile: result_tile_for(x: 3, y: 2).merge!( rule_properties: {  rule: rule_parts[0], step: 1  } ), piece: {"id"=> "8", "name"=>"pawn", "orientation"=>-1 } },
+        { tile: result_tile_for(x: 4, y: 2).merge!( rule_properties: {  rule: rule_parts[1], step: 0  } ), piece: {"id"=> "9", "name"=>"pawn", "orientation"=>-1 } },
       ]
       expect(rule.results_of_move(on: @game_with_collisions, from: { x: 3, y: 0, orientation: 1 }, to: { x: 4, y: 2 })).to match(expected_results)      
     end
@@ -720,7 +724,7 @@ RSpec.describe GameRule do
       game.add_piece({ name: "pawn", x: 3, y: 5, orientation: -1 })
       rule = GameRule.new({ direction: :forward })
       expected_results = [
-        { tile: { x: 3, y: 5, orientation: 1, rule_properties: { rule: rule, step: 4 } }, piece: {"id"=> "0", "name"=>"pawn", "orientation"=>-1, "state" => "3,5"} }
+        { tile: result_tile_for(x: 3, y: 5).merge!( rule_properties: {  rule: rule, step: 4  } ), piece: {"id"=> "0", "name"=>"pawn", "orientation"=>-1, "state" => "3,5"} }
       ]
       expect(rule.collisions(on: game, from: @starting_point, to: { x: 3, y: 5 })).to match(expected_results)
     end
@@ -743,17 +747,17 @@ RSpec.describe GameRule do
     it "should return all collisions for rules that allow :all" do
       rule = GameRule.new( { direction: :forward, collisions: :all })
       expected_results = [
-        { tile: { x: 3, y: 1, orientation: 1, rule_properties: { rule: rule, step: 0 } }, piece: {"id"=>"11", "name"=>"pawn", "orientation"=>-1 } },
-        { tile: { x: 3, y: 2, orientation: 1, rule_properties: { rule: rule, step: 1 } }, piece: {"id"=> "8", "name"=>"pawn", "orientation"=>-1 } },
-        { tile: { x: 3, y: 4, orientation: 1, rule_properties: { rule: rule, step: 3 } }, piece: {"id"=> "2", "name"=>"pawn", "orientation"=>-1 } },
-        { tile: { x: 3, y: 5, orientation: 1, rule_properties: { rule: rule, step: 4 } }, piece: {"id"=> "5", "name"=>"pawn", "orientation"=>-1 } },
+        { tile: result_tile_for(x: 3, y: 1).merge!( rule_properties: {  rule: rule, step: 0  } ), piece: {"id"=>"11", "name"=>"pawn", "orientation"=>-1 } },
+        { tile: result_tile_for(x: 3, y: 2).merge!( rule_properties: {  rule: rule, step: 1  } ), piece: {"id"=> "8", "name"=>"pawn", "orientation"=>-1 } },
+        { tile: result_tile_for(x: 3, y: 4).merge!( rule_properties: {  rule: rule, step: 3  } ), piece: {"id"=> "2", "name"=>"pawn", "orientation"=>-1 } },
+        { tile: result_tile_for(x: 3, y: 5).merge!( rule_properties: {  rule: rule, step: 4  } ), piece: {"id"=> "5", "name"=>"pawn", "orientation"=>-1 } },
       ]
       expect(rule.collisions(on: @game_with_collisions, from: @starting_point, to: { x: 3, y: 7 })).to eq(expected_results)
     end
     it "should return jumping collisions" do
       rule = GameRule.new( { direction: :forward, collisions: :jumping })
       expected_results = [
-        { tile: { x: 3, y: 2, orientation: 1, rule_properties: { rule: rule, step: 1 } }, piece: {"id"=> "8", "name"=>"pawn", "orientation"=>-1 } },
+        { tile: result_tile_for(x: 3, y: 2).merge!( rule_properties: {  rule: rule, step: 1  } ), piece: {"id"=> "8", "name"=>"pawn", "orientation"=>-1 } },
       ]
       expect(rule.collisions(on: @game_with_collisions, from: @starting_point, to: { x: 3, y: 2 })).to eq(expected_results)
       expect(rule.collisions(on: @game_with_collisions, from: { x: 3, y: 1, orientation: 1 }, to: { x: 3, y: 3 })).to eq([])
@@ -778,7 +782,7 @@ RSpec.describe GameRule do
         ]
         rule = GameRule.new({ direction: rule_parts, steps: 1 })
         expected_results = [
-          { tile: { x: 4, y: 2, orientation: 1, rule_properties: { rule: rule_parts[1], step: 0 } }, piece: {"id"=>"9", "name"=>"pawn", "orientation"=>-1 } }
+          { tile: { x: 4, y: 2, orientation: 1, probability: 0.9, rule_properties: { rule: rule_parts[1], step: 0 } }, piece: {"id"=>"9", "name"=>"pawn", "orientation"=>-1 } }
         ]
         expect(rule.collisions(on: @game_with_collisions, from: @starting_point, to: { x: 4, y: 2 })).to eq(expected_results)
       end
@@ -790,14 +794,14 @@ RSpec.describe GameRule do
         ]
         rule = GameRule.new({ direction: rule_parts, steps: 1 })
         expected_results = [
-          { tile: { x: 2, y: 1, orientation: 1, rule_properties: { rule: rule_parts[0], step: 0 } }, piece: {"id"=>"10", "name"=>"pawn", "orientation"=>-1 } },
-          { tile: { x: 2, y: 2, orientation: 1, rule_properties: { rule: rule_parts[0], step: 1 } }, piece: {"id"=> "7", "name"=>"pawn", "orientation"=>-1 } },
-          { tile: { x: 2, y: 3, orientation: 1, rule_properties: { rule: rule_parts[0], step: 2 } }, piece: {"id"=>"13", "name"=>"pawn", "orientation"=>-1 } },
-          { tile: { x: 2, y: 4, orientation: 1, rule_properties: { rule: rule_parts[0], step: 3 } }, piece: {"id"=> "1", "name"=>"pawn", "orientation"=>-1 } },
-          { tile: { x: 2, y: 5, orientation: 1, rule_properties: { rule: rule_parts[0], step: 4 } }, piece: {"id"=> "4", "name"=>"pawn", "orientation"=>-1 } },
-          { tile: { x: 3, y: 5, orientation: 1, rule_properties: { rule: rule_parts[1], step: 0 } }, piece: {"id"=> "5", "name"=>"pawn", "orientation"=>-1 } },
-          { tile: { x: 4, y: 5, orientation: 1, rule_properties: { rule: rule_parts[1], step: 1 } }, piece: {"id"=> "6", "name"=>"pawn", "orientation"=>-1 } },
-          { tile: { x: 4, y: 4, orientation: 1, rule_properties: { rule: rule_parts[2], step: 0 } }, piece: {"id"=> "3", "name"=>"pawn", "orientation"=>-1 } }
+          { tile: result_tile_for(x: 2, y: 1).merge!( rule_properties: { rule: rule_parts[0], step: 0 } ), piece: {"id"=>"10", "name"=>"pawn", "orientation"=>-1 } },
+          { tile: { rule_properties: { rule: rule_parts[0], step: 1 }, x: 2, y: 2, orientation: 1, probability: 0.9 }, piece: {"id"=> "7", "name"=>"pawn", "orientation"=>-1 } },
+          { tile: { rule_properties: { rule: rule_parts[0], step: 2 }, x: 2, y: 3, orientation: 1, probability: 0.9 }, piece: {"id"=>"13", "name"=>"pawn", "orientation"=>-1 } },
+          { tile: { rule_properties: { rule: rule_parts[0], step: 3 }, x: 2, y: 4, orientation: 1, probability: 0.9 }, piece: {"id"=> "1", "name"=>"pawn", "orientation"=>-1 } },
+          { tile: { rule_properties: { rule: rule_parts[0], step: 4 }, x: 2, y: 5, orientation: 1, probability: 0.9 }, piece: {"id"=> "4", "name"=>"pawn", "orientation"=>-1 } },
+          { tile: { rule_properties: { rule: rule_parts[1], step: 0 }, x: 3, y: 5, orientation: 1, probability: 0.9 }, piece: {"id"=> "5", "name"=>"pawn", "orientation"=>-1 } },
+          { tile: { rule_properties: { rule: rule_parts[1], step: 1 }, x: 4, y: 5, orientation: 1, probability: 0.9 }, piece: {"id"=> "6", "name"=>"pawn", "orientation"=>-1 } },
+          { tile: { rule_properties: { rule: rule_parts[2], step: 0 }, x: 4, y: 4, orientation: 1, probability: 0.9 }, piece: {"id"=> "3", "name"=>"pawn", "orientation"=>-1 } }
         ]
         expect(rule.collisions(on: @game_with_collisions, from: { x: 2, y: 0, orientation: 1 }, to: { x: 4, y: 4 })).to eq(expected_results)
       end

@@ -62,7 +62,7 @@ class GameRule
   # returns an array of all valid positions from the supplied position 
   # note: currently does not pay attention to collisions
   # from_position: Set [ { x: [x], y: [y], orientation [1/-1] } ]
-  def all_valid_moves(on:, from_positions:)
+  def all_valid_moves(on:, from_positions:, include_probabilities: false)
     if from_positions.is_a? Hash
       new_positions = get_all_valid_moves_from_single_position(on: on, position: from_positions)
     else
@@ -109,7 +109,7 @@ class GameRule
     compound_collisions = []
     intermediate_tiles = find_compound_steps(game, from, to)
     return :invalid_move if intermediate_tiles.empty?
-    current_position = from
+    current_position = from.dup
     intermediate_tiles.each_with_index do |tile, index|
       compound_collisions << @direction[index].collisions(on: game, from: current_position, to: tile)
       current_position = tile
@@ -135,7 +135,7 @@ class GameRule
     return all_traveled_tiles_for_compound_rule(game, from, to) if @direction.is_a?(Array)
     results = []
     current_position = from.dup
-    results << { rule_properties: { rule: self, step: results.length } }.merge!(current_position) until (same_tile?(current_position, to) || game.piece_on_tile(next_tile!(current_position)) == :off_board || (@steps[:max] > 0 && results.length >= @steps[:max]))
+    results << { rule_properties: { rule: self, step: results.length }, probability: get_probability_result(results.length) }.merge!(current_position) until (same_tile?(current_position, to) || game.piece_on_tile(next_tile!(current_position)) == :off_board || (@steps[:max] > 0 && results.length >= @steps[:max]))
     results = nil if results.length < @steps[:min]
     return results
   end
@@ -187,10 +187,15 @@ class GameRule
     return get_all_valid_moves_with_compound_direction(on: on, positions: position) if @direction.is_a?(Array)
     valid_positions = Set.new
     new_position = position.dup
+    # note: no reason to check if these are valid steps because the very first real step checks if the entire walk is valid
     (1..@steps[:min]).each { |step| next_tile!(new_position) }
     # note: is_valid? is horribly inefficient, but it works and it gets edge cases,
     # so I'm not replacing it until I notice a performance reason to do so
+    step = @steps[:min]
+    new_position[:probability] = get_probability_result(step)
     while (is_valid?(on: on, from: position, to: new_position)) do
+      new_position[:probability] = get_probability_result(step)
+      step+=1
       valid_positions << new_position
       new_position = next_tile!(new_position.dup)
     end
@@ -325,6 +330,6 @@ class GameRule
 
     def valid_compound?(on:, from:, to:)
       current_positions = get_all_valid_moves_with_compound_direction(on: on, positions: from)
-      current_positions.include?({ x: to[:x], y: to[:y], orientation: from[:orientation] })
+      current_positions.detect { |position| position[:x] == to[:x] && position[:y] == to[:y] }.present?
     end
 end

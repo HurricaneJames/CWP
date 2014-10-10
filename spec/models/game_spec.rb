@@ -80,9 +80,9 @@ RSpec.describe Game, :type => :model do
     game = Fabricate.build(:game)
     game.add_piece(name: "pawn", x: 3, y: 3)
     valid_pawn_moves = [
-      { x: 2, y: 4, orientation: 1 },
-      { x: 3, y: 4, orientation: 1 },
-      { x: 4, y: 4, orientation: 1 }
+      { x: 2, y: 4, orientation: 1, probability: 0.9  },
+      { x: 3, y: 4, orientation: 1, probability: 0.25 },
+      { x: 4, y: 4, orientation: 1, probability: 0.9  }
     ]
     expect(game.all_legal_moves_for_piece(0)).to match_array(valid_pawn_moves)
   end
