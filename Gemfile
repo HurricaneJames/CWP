@@ -20,14 +20,14 @@ gem 'sdoc', '~> 0.4.0',          group: :doc
 gem 'spring',        group: :development
 
 gem 'foundation-rails', '~> 5.4'
-# gem 'react-rails', '~> 0.11.1'
 gem 'react-rails', '~> 1.0.0.pre', github: 'reactjs/react-rails'
 
 # Use ActiveModel has_secure_password
 # gem 'bcrypt', '~> 3.1.7'
 
-# Use unicorn as the app server
-# gem 'unicorn'
+group :production do
+  gem 'unicorn'
+end
 
 # Use Capistrano for deployment
 # gem 'capistrano-rails', group: :development
@@ -38,6 +38,7 @@ gem 'react-rails', '~> 1.0.0.pre', github: 'reactjs/react-rails'
 group :development do
   gem 'thin'
   gem 'quiet_assets'
+  gem 'capistrano', '~> 2.15'
 end
 
 group :developemnt, :test do
