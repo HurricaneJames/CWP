@@ -125,8 +125,11 @@ var MessGame = React.createClass({ displayName: 'MessGame',
   },
   processMoveRequest: function(row, column) {
     var activePiece = this.props.pieces[this.state.activePiece]
-      , moveString = activePiece.state + ':' + column + ',' + row + ':';
-    console.debug("Move Requested: %o", moveString);
+      , moveString = activePiece.state + ':' + column + ',' + row + ':'
+      , moveElement = document.querySelector('#move')
+      , submitElement = moveElement.parentElement.querySelector('input[type=submit]');
+    moveElement.value = moveString;
+    submitElement.click();
   },
   onMouseDownOnTile: function(row, column, event) {
     var pieceId = this.pieceOnTile(row, column);
