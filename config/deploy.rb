@@ -11,7 +11,6 @@ load "config/recipes/check"
 load "config/recipes/messmoda"
 
 server "messmoda.com", :web, :app, :db, primary: true
-#server "198.199.118.141", :web, :app, :db, primary: true
 
 set :user, "deployer"
 set :application, "messmoda.com"
