@@ -17,6 +17,7 @@ set :user_home, "/home/#{user}"
 set :deploy_to, "#{user_home}/apps/#{application}"
 set :deploy_via, :remote_cache
 set :use_sudo, false
+set :rails_env, "production"
 
 set :scm, "git"
 set :repository, "https://github.com/HurricaneJames/CWP.git"
