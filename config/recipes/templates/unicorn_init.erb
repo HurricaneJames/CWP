@@ -16,7 +16,10 @@ APP_ROOT=<%= current_path %>
 PID=<%= unicorn_pid %>
 CMD="cd <%= current_path %>; bundle exec unicorn -D -c <%= unicorn_config %> -E production"
 AS_USER=<%= unicorn_user %>
+INIT_CONF=$APP_ROOT/config/init.conf
+
 set -u
+test -f "$INIT_CONF" && . $INIT_CONF
 
 OLD_PIN="$PID.oldbin"
 

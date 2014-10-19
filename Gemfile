@@ -27,6 +27,7 @@ gem 'react-rails', '~> 1.0.0.pre', github: 'reactjs/react-rails'
 
 group :production do
   gem 'unicorn'
+  gem 'pg'
 end
 
 # Use Capistrano for deployment
