@@ -13,7 +13,7 @@ namespace :unicorn do
     run "mkdir -p #{shared_path}/config"
     template "unicorn.rb.erb", unicorn_config
     template "unicorn_init.erb", "/tmp/unicorn_init"
-    template "exports.erb", unicorn_config_env
+    template "unicorn_init_conf.erb", unicorn_config_env
     run "chmod +x /tmp/unicorn_init"
     run "#{sudo} mv /tmp/unicorn_init /etc/init.d/unicorn_#{application}"
     run "#{sudo} update-rc.d -f unicorn_#{application} defaults"

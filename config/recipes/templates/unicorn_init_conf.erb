@@ -1,0 +1,2 @@
+<% export_prefix = application.gsub(/\./, "_").upcase %>
+export <%= export_prefix %>_SECRET_KEY_BASE="<%= unicorn_secret_key %>"
