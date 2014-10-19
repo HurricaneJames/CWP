@@ -26,4 +26,4 @@ production:
   database: messmoda_com_production
   pool: 5
   username: messmoda_com
-  password: badpassword
+  password: naghead44
