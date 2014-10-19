@@ -1,4 +1,4 @@
-namespace :easytimelog do
+namespace :messmoda do
   # desc "Link the current production database to the new deploy"
   # task :link_database_file do
   #   run "ln -nsf #{shared_path}/production.sqlite3 #{release_path}/db/production.sqlite3"
