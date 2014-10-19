@@ -22,8 +22,9 @@ test:
 
 production:
   adapter: postgresql
-  encoding: unicode
+  encoding: utf8
   database: messmoda_com_production
+  host: localhost
   pool: 5
   username: messmoda_com
   password: naghead44
