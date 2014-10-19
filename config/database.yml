@@ -26,4 +26,4 @@ production:
   database: messmoda_com_production
   pool: 5
   username: messmoda_com
-  password: <%= ENV["POSTGRESQL_PASSWORD"] %>
+  password: <%= ENV["MESSMODA_COM_POSTGRESQL_PASSWORD"] %>

@@ -4,16 +4,17 @@ load "deploy/assets"
 load "config/recipes/base"
 load "config/recipes/nginx"
 load "config/recipes/unicorn"
-#load "config/recipes/rbenv"
+load "config/recipes/rbenv"
 load "config/recipes/postgresql"
 load "config/recipes/check"
 load "config/recipes/messmoda"
 
 server "messmoda.com", :web, :app, :db, primary: true
 
-set :user, "deployer"
 set :application, "messmoda.com"
-set :deploy_to, "/home/#{user}/apps/#{application}"
+set :user, "deployer"
+set :user_home, "/home/#{user}"
+set :deploy_to, "#{user_home}/apps/#{application}"
 set :deploy_via, :remote_cache
 set :use_sudo, false
 
