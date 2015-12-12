@@ -4,7 +4,7 @@ gem 'rails', '4.1.4'
 
 gem 'sqlite3'
 
-gem 'sass-rails', '~> 4.0.3'
+gem 'sass-rails', '~> 5.0.4'
 gem 'uglifier', '>= 1.3.0'
 gem 'coffee-rails', '~> 4.0.0'
 gem 'therubyracer',  platforms: :ruby
@@ -19,8 +19,8 @@ gem 'sdoc', '~> 0.4.0',          group: :doc
 
 gem 'spring',        group: :development
 
-gem 'foundation-rails', '~> 5.4'
-gem 'react-rails', '~> 1.0.0.pre', github: 'reactjs/react-rails'
+gem 'foundation-rails', '~> 5.5.3.2'
+gem 'react-rails', '~> 1.5.0'
 
 # Use ActiveModel has_secure_password
 # gem 'bcrypt', '~> 3.1.7'

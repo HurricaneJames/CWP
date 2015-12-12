@@ -1,4 +1,3 @@
-/** @jsx React.DOM *//** @jsx React.DOM */
 
 var MESS_PIECE_MAP = {
   pawn:   { "1": '\u2659', "-1": '\u265F' },
