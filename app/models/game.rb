@@ -20,6 +20,8 @@ class Game < ActiveRecord::Base
     dead_pieces = move_positions.fetch(2, nil)
     promotion   = move_positions.fetch(3, nil)
     piece       = piece_on_tile(from)
+    # TODO - add test for this failing condition (causes a crash and it should not)
+    return false if piece === :none
     promotion_rules = game_rules.promotions_for_move({ to: to, type: piece[:name] })
     return false unless (promotion_rules.empty? || game_rules.can_promote?(piece, to, promotion))
     return move_piece(from: from, to: to, with_dead_pieces: dead_pieces) && (promotion_rules.empty? || promote(piece, promotion))

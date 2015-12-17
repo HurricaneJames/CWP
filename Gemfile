@@ -13,6 +13,8 @@ gem 'jquery-rails'
 # gem 'js-routes'
 
 gem 'versionist'
+gem 'graphql'
+gem 'graphql-relay'
 
 gem 'jbuilder', '~> 2.0'
 gem 'sdoc', '~> 0.4.0',          group: :doc
